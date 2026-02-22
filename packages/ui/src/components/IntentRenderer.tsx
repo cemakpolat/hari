@@ -87,12 +87,20 @@ export function IntentRenderer({ compiledView, onActionExecute, onAmbiguityChang
       {/* ── Main content ───────────────────────────────────────────────── */}
       <div style={{ marginBottom: '1rem' }}>
         {DomainComponent ? (
-          <DomainComponent
-            {...compiledView.data}
-            density={density}
-            explain={compiledView.explain}
-            onExplain={(elementId: string) => openExplainPanel(elementId)}
-          />
+          <React.Suspense
+            fallback={
+              <div style={{ padding: '1.5rem', color: '#94a3b8', fontSize: '0.875rem', textAlign: 'center' }}>
+                Loading component…
+              </div>
+            }
+          >
+            <DomainComponent
+              {...compiledView.data}
+              density={density}
+              explain={compiledView.explain}
+              onExplain={(elementId: string) => openExplainPanel(elementId)}
+            />
+          </React.Suspense>
         ) : (
           <FallbackView data={compiledView.data} type={compiledView.type} domain={compiledView.domain} />
         )}
@@ -160,21 +168,37 @@ interface ActionGroupProps {
 
 function ActionGroup({ action, density, pending, onExecute, onConfirm, onDismiss }: ActionGroupProps) {
   const [delayReady, setDelayReady] = React.useState(false);
+  const [remaining, setRemaining] = React.useState(0);
   const delay = action.safety?.confirmationDelay ?? 0;
 
   React.useEffect(() => {
-    if (pending && delay > 0) {
-      const t = setTimeout(() => setDelayReady(true), delay);
-      return () => clearTimeout(t);
+    if (!pending) {
+      setDelayReady(false);
+      setRemaining(0);
+      return undefined;
     }
-    if (pending) setDelayReady(true);
-    return undefined;
-  }, [pending, delay]);
+    if (delay <= 0) {
+      setDelayReady(true);
+      return undefined;
+    }
 
-  // Reset delay state when pending is dismissed
-  React.useEffect(() => {
-    if (!pending) setDelayReady(false);
-  }, [pending]);
+    const secs = Math.ceil(delay / 1000);
+    setRemaining(secs);
+
+    const countInterval = setInterval(() => {
+      setRemaining((r) => Math.max(0, r - 1));
+    }, 1000);
+
+    const readyTimer = setTimeout(() => {
+      setDelayReady(true);
+      clearInterval(countInterval);
+    }, delay);
+
+    return () => {
+      clearTimeout(readyTimer);
+      clearInterval(countInterval);
+    };
+  }, [pending, delay]);
 
   return (
     <div>
@@ -187,6 +211,10 @@ function ActionGroup({ action, density, pending, onExecute, onConfirm, onDismiss
 
       {pending ? (
         <div
+          role="alertdialog"
+          aria-modal="false"
+          aria-labelledby={`confirm-label-${action.id}`}
+          aria-describedby={pending.blastRadiusSummary ? `confirm-desc-${action.id}` : undefined}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -198,24 +226,27 @@ function ActionGroup({ action, density, pending, onExecute, onConfirm, onDismiss
             flexWrap: 'wrap',
           }}
         >
-          <span style={{ fontSize: '0.875rem', color: '#dc2626', fontWeight: 600 }}>
+          <span id={`confirm-label-${action.id}`} style={{ fontSize: '0.875rem', color: '#dc2626', fontWeight: 600 }}>
             Confirm: {pending.label}?
           </span>
           {pending.blastRadiusSummary && (
-            <span style={{ fontSize: '0.75rem', color: '#b91c1c' }}>
+            <span id={`confirm-desc-${action.id}`} style={{ fontSize: '0.75rem', color: '#b91c1c' }}>
               — {pending.blastRadiusSummary}
             </span>
           )}
           <button
             onClick={onConfirm}
             disabled={!delayReady}
+            aria-label={delayReady ? `Confirm ${pending.label}` : `Wait ${remaining}s before confirming`}
             style={{
               ...actionButtonStyle('destructive'),
               opacity: delayReady ? 1 : 0.4,
               cursor: delayReady ? 'pointer' : 'not-allowed',
             }}
           >
-            {delayReady ? 'Yes, proceed' : 'Wait…'}
+            <span aria-live="polite" aria-atomic="true">
+              {delayReady ? 'Yes, proceed' : remaining > 0 ? `${remaining}s…` : 'Wait…'}
+            </span>
           </button>
           <button onClick={onDismiss} style={actionButtonStyle('secondary')}>
             Cancel

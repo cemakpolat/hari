@@ -158,6 +158,28 @@ registry.register('iot', 'sensor_overview', {
   default: () => SensorGrid,
 });
 
+// ── Async resolver demo (React.lazy + Suspense) ───────────────────────────────
+//
+// Registers FlightListOperator via React.lazy to demonstrate code-splitting.
+// In a production app, replace Promise.resolve() with a real dynamic import
+// pointing to a separately-bundled chunk:
+//
+//   const LazyFlightListOperator = React.lazy(
+//     () => import('./components/FlightListOperator'),
+//   );
+//
+// IntentRenderer wraps DomainComponent in <React.Suspense>, so the lazy
+// component's loading fallback is shown automatically while the chunk loads.
+
+const LazyFlightListOperator = React.lazy(() =>
+  // Simulates an async chunk load — replace with a real import() in production.
+  Promise.resolve({ default: FlightListOperator }),
+);
+
+registry.register('travel', 'comparison_lazy', {
+  default: () => LazyFlightListOperator,
+});
+
 // ── Generic fallback (already handled by IntentRenderer, but here for doc purposes) ──
 
 registry.register(GENERIC_DOMAIN, FALLBACK_INTENT, {

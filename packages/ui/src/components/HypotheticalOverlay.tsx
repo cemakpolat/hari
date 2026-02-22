@@ -127,6 +127,12 @@ function bridgeResultToLocal(r: BridgeWhatIfResult): HypotheticalResult {
 export function HypotheticalOverlay({ query, onDismiss, bridge, intentSnapshot, onSimulate }: Props) {
   const [result, setResult] = React.useState<HypotheticalResult | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const dismissRef = React.useRef<HTMLButtonElement>(null);
+
+  // Move focus to the dismiss button when the overlay mounts (WCAG 2.4.3 Focus Order)
+  React.useEffect(() => {
+    dismissRef.current?.focus();
+  }, []);
 
   React.useEffect(() => {
     setLoading(true);
@@ -156,6 +162,10 @@ export function HypotheticalOverlay({ query, onDismiss, bridge, intentSnapshot, 
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Hypothetical analysis"
+      aria-live="polite"
       style={{
         backgroundColor: '#f5f3ff',
         border: '1.5px solid #a78bfa',
@@ -190,6 +200,7 @@ export function HypotheticalOverlay({ query, onDismiss, bridge, intentSnapshot, 
           </div>
         </div>
         <button
+          ref={dismissRef}
           onClick={onDismiss}
           style={{
             background: 'none',
@@ -292,10 +303,20 @@ const IMPACT_COLOR = { positive: '#15803d', negative: '#dc2626', neutral: '#6474
 const IMPACT_ICON  = { positive: '↑', negative: '↓', neutral: '→' };
 
 function Spinner() {
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const [dot, setDot] = React.useState(0);
   React.useEffect(() => {
+    if (prefersReducedMotion) return;
     const t = setInterval(() => setDot((d) => (d + 1) % 4), 300);
     return () => clearInterval(t);
-  }, []);
-  return <span style={{ fontFamily: 'monospace' }}>{'⠋⠙⠹⠸'[dot]}</span>;
+  }, [prefersReducedMotion]);
+
+  return (
+    <span aria-hidden="true" style={{ fontFamily: 'monospace' }}>
+      {prefersReducedMotion ? '…' : '⠋⠙⠹⠸'[dot]}
+    </span>
+  );
 }

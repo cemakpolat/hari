@@ -36,6 +36,8 @@ export function ExplainPanel({ context, onClose, onWhatIf }: Props) {
 
   return (
     <div
+      role="region"
+      aria-label="Why am I seeing this?"
       style={{
         backgroundColor: '#1e1b4b',
         color: '#e0e7ff',
@@ -171,6 +173,7 @@ export function ExplainPanel({ context, onClose, onWhatIf }: Props) {
                 <button
                   key={q}
                   onClick={() => onWhatIf(q)}
+                  aria-label={`Ask: ${q}`}
                   style={{
                     padding: '0.2rem 0.6rem',
                     borderRadius: '0.375rem',
@@ -190,6 +193,7 @@ export function ExplainPanel({ context, onClose, onWhatIf }: Props) {
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input
               type="text"
+              aria-label="What-if question"
               value={whatIfInput}
               onChange={(e) => setWhatIfInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submitWhatIf()}
@@ -234,6 +238,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div style={{ marginTop: '1rem' }}>
       <div
+        role="heading"
+        aria-level={3}
         style={{
           fontWeight: 700,
           color: '#818cf8',

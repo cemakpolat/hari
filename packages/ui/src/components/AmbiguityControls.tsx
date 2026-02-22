@@ -31,6 +31,8 @@ export function AmbiguityControls({ controls, onModify }: Props) {
 
   return (
     <div
+      role="group"
+      aria-label="Clarify intent"
       style={{
         backgroundColor: '#f8fafc',
         border: '1px solid #e2e8f0',
@@ -39,6 +41,7 @@ export function AmbiguityControls({ controls, onModify }: Props) {
       }}
     >
       <div
+        aria-hidden="true"
         style={{
           fontSize: '0.65rem',
           fontWeight: 700,
@@ -67,7 +70,8 @@ function ControlItem({
   onChange: (id: string, value: AmbiguityControl['value']) => void;
 }) {
   switch (control.type) {
-    case 'range_selector':
+    case 'range_selector': {
+      const inputId = `range-${control.id}`;
       return (
         <div style={{ marginBottom: '1rem' }}>
           <div
@@ -77,10 +81,10 @@ function ControlItem({
               marginBottom: '0.25rem',
             }}
           >
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>
+            <label htmlFor={inputId} style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>
               {control.label}
             </label>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+            <span aria-hidden="true" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
               {control.minLabel ?? control.min}&nbsp;←&nbsp;
               <strong style={{ color: '#475569' }}>{control.value.toFixed(1)}</strong>
               &nbsp;→&nbsp;{control.maxLabel ?? control.max}
@@ -92,16 +96,22 @@ function ControlItem({
             </p>
           )}
           <input
+            id={inputId}
             type="range"
             min={control.min}
             max={control.max}
             step={control.step}
             value={control.value}
+            aria-valuemin={control.min}
+            aria-valuemax={control.max}
+            aria-valuenow={control.value}
+            aria-valuetext={`${control.value.toFixed(1)} — range ${control.minLabel ?? control.min} to ${control.maxLabel ?? control.max}`}
             onChange={(e) => onChange(control.id, parseFloat(e.target.value))}
             style={{ width: '100%', accentColor: '#4f46e5' }}
           />
         </div>
       );
+    }
 
     case 'toggle':
       return (
@@ -125,6 +135,7 @@ function ControlItem({
           </div>
           <Toggle
             checked={control.value}
+            label={control.label}
             onChange={(v) => onChange(control.id, v)}
           />
         </div>
@@ -192,15 +203,22 @@ function ControlItem({
 
 function Toggle({
   checked,
+  label,
   onChange,
 }: {
   checked: boolean;
+  label?: string;
   onChange: (v: boolean) => void;
 }) {
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   return (
     <button
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       onClick={() => onChange(!checked)}
       style={{
         position: 'relative',
@@ -210,7 +228,7 @@ function Toggle({
         border: 'none',
         backgroundColor: checked ? '#4f46e5' : '#cbd5e1',
         cursor: 'pointer',
-        transition: 'background-color 0.2s',
+        transition: prefersReducedMotion ? 'none' : 'background-color 0.2s',
         flexShrink: 0,
       }}
     >
@@ -223,7 +241,7 @@ function Toggle({
           height: '1.25rem',
           borderRadius: '50%',
           backgroundColor: 'white',
-          transition: 'left 0.2s',
+          transition: prefersReducedMotion ? 'none' : 'left 0.2s',
           boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
         }}
       />
@@ -243,6 +261,7 @@ function Chip({
   return (
     <button
       onClick={onClick}
+      aria-pressed={active}
       style={{
         padding: '0.25rem 0.75rem',
         borderRadius: '0.375rem',
