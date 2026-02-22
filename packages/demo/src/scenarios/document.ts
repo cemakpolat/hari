@@ -1,3 +1,4 @@
+import { v4 as uuid } from 'uuid';
 import type { IntentPayloadInput } from '@hari/core';
 import type { DocumentData } from '@hari/core';
 
@@ -212,7 +213,7 @@ const data = documentData as unknown as Record<string, unknown>;
 
 export const documentIntent: IntentPayloadInput = {
   version: '1.0.0',
-  intentId: 'doc-incident-2847-postmortem',
+  intentId: uuid(),
   type: 'document',
   domain: 'reports',
   primaryGoal: 'Review AI-generated post-mortem for incident INC-2847',
@@ -231,16 +232,16 @@ export const documentIntent: IntentPayloadInput = {
         { value: 'standard', label: 'Standard'      },
         { value: 'full',     label: 'Full detail'   },
       ],
-      currentValue: 'standard',
-      required: false,
+      value: 'standard',
+      parameterKey: 'reportDepth',
     },
     {
       id: 'show-confidence',
       label: 'Show AI confidence',
       description: 'Display per-section and per-paragraph confidence indicators.',
       type: 'toggle',
-      currentValue: true,
-      required: false,
+      value: true,
+      parameterKey: 'showConfidence',
     },
   ],
 
@@ -251,60 +252,105 @@ export const documentIntent: IntentPayloadInput = {
       id: 'acknowledge-report',
       label: 'Acknowledge',
       description: 'Mark the post-mortem as reviewed by your team.',
-      style: 'primary',
-      blastRadius: 'low',
+      variant: 'primary',
+      safety: {
+        confidence: 0.99,
+        reversible: true,
+        riskLevel: 'low',
+        requiresConfirmation: false,
+      },
     },
     {
       id: 'escalate-report',
       label: 'Escalate to VP Eng',
       description: 'Flag this incident for executive review.',
-      style: 'danger',
-      blastRadius: 'medium',
-      confirmationRequired: true,
-      confirmationDelay: 3,
+      variant: 'destructive',
+      safety: {
+        confidence: 0.92,
+        reversible: false,
+        riskLevel: 'medium',
+        requiresConfirmation: true,
+        confirmationDelay: 3000,
+        explanation: 'This will page the VP of Engineering and create a formal escalation record.',
+        blastRadius: {
+          scope: 'org',
+          affectedSystems: ['pagerduty', 'email', 'jira'],
+          downstreamEffects: 'VP Eng will be paged immediately; JIRA escalation ticket created.',
+        },
+      },
     },
     {
       id: 'export-pdf',
       label: 'Export PDF',
       description: 'Download this post-mortem as a PDF for sharing.',
-      style: 'secondary',
-      blastRadius: 'low',
+      variant: 'secondary',
+      safety: {
+        confidence: 0.99,
+        reversible: true,
+        riskLevel: 'low',
+        requiresConfirmation: false,
+      },
     },
   ],
 
   explainability: {
     'explain-root-cause': {
-      id: 'explain-root-cause',
-      label: 'Root Cause Analysis',
-      confidence: 0.88,
-      reasoning:
+      elementId: 'explain-root-cause',
+      summary:
         'Root cause was identified by correlating WAL write amplification metrics ' +
         'with the ETL job execution window and cross-referencing with pg_stat_activity ' +
         'snapshots taken every 10 s during the incident.',
-      factors: [
+      dataSources: [
+        { name: 'pg_stat_activity snapshots', type: 'database', freshness: '2026-02-22T06:30:00Z', reliability: 0.99 },
+        { name: 'Datadog metrics (WAL flush latency)', type: 'api', freshness: '2026-02-22T06:42:00Z', reliability: 0.97 },
+      ],
+      assumptions: [
         'WAL flush latency spike from 8 ms → 640 ms at 06:16 UTC',
         'etl-nightly-42 appeared in pg_stat_activity with state=active throughout',
         'No composite index on events(tenant_id, created_at) confirmed via \\d+ events',
       ],
-      alternatives: [
-        'Network partition between primary and replica (ruled out — no packet loss)',
-        'Hardware disk degradation (ruled out — I/O latency normal on primary)',
+      alternativesConsidered: [
+        {
+          description: 'Network partition between primary and replica',
+          reason: 'Ruled out — no packet loss or latency spike detected on network monitors.',
+        },
+        {
+          description: 'Hardware disk degradation on primary',
+          reason: 'Ruled out — I/O latency on primary was within normal bounds throughout.',
+        },
+      ],
+      whatIfQueries: [
+        'What if the index had been in place?',
+        'What if autovacuum had been paused during the import?',
+        'How long until replicas fully catch up at current lag rate?',
       ],
     },
     'explain-recommendations': {
-      id: 'explain-recommendations',
-      label: 'Recommendation rationale',
-      confidence: 0.82,
-      reasoning:
+      elementId: 'explain-recommendations',
+      summary:
         'Recommendations are ranked by (estimated impact × implementation speed). ' +
         'The index fix is the critical path item; governance and SLO changes are ' +
         'complementary hardening measures.',
-      factors: [
+      dataSources: [
+        { name: 'PostgreSQL WAL tuning guidelines', type: 'database', reliability: 0.95 },
+        { name: 'Historical incident corpus (INC-2801, INC-2734)', type: 'database', reliability: 0.88 },
+      ],
+      assumptions: [
         'Index addition eliminates sequential conflict checks (root cause)',
         'Query governor prevents recurrence even if index is accidentally dropped',
         'SLO tightening reduces detection latency for future similar incidents',
       ],
-      alternatives: [],
+      alternativesConsidered: [
+        {
+          description: 'Increase replica count to absorb lag spikes',
+          reason: 'Treats symptom not cause; does not prevent WAL saturation.',
+        },
+      ],
+      whatIfQueries: [
+        'What if we skip the index and just add retries?',
+        'How much does the query governor reduce P99 write latency?',
+        'What is the risk of running CREATE INDEX CONCURRENTLY during business hours?',
+      ],
     },
   },
 
