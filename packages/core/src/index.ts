@@ -4,6 +4,7 @@ export * from './schemas/action';
 export * from './schemas/explainability';
 export * from './schemas/intent';
 export * from './schemas/document';
+export * from './schemas/form';
 
 // Compiler
 export * from './compiler/registry';

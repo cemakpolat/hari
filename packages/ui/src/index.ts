@@ -27,6 +27,10 @@ export type { SensorReading } from './components/domain/iot/SensorCard';
 export { DocumentRenderer } from './components/DocumentRenderer';
 export type { DocumentRendererProps } from './components/DocumentRenderer';
 
+// Domain components — forms
+export { FormRenderer } from './components/FormRenderer';
+export type { FormRendererProps } from './components/FormRenderer';
+
 // Hooks
 export { useAgentBridge } from './hooks/useAgentBridge';
 export type { UseAgentBridgeResult } from './hooks/useAgentBridge';

@@ -133,6 +133,21 @@ function renderBlock(
       return (
         <hr key={key} style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0.5rem 0' }} />
       );
+
+    case 'table':
+      return <TableBlock key={key} headers={block.headers} rows={block.rows} caption={block.caption} />;
+
+    case 'image':
+      return <ImageBlock key={key} src={block.src} alt={block.alt} caption={block.caption} width={block.width} />;
+
+    case 'quote':
+      return <QuoteBlock key={key} text={block.text} author={block.author} source={block.source} />;
+
+    case 'dataviz':
+      return <DataVizBlock key={key} chartType={block.chartType} title={block.title} data={block.data} config={block.config} />;
+
+    case 'embed':
+      return <EmbedBlock key={key} url={block.url} fallbackText={block.fallbackText} height={block.height} />;
   }
 }
 
@@ -289,6 +304,204 @@ function MetricBlock({
       </div>
       {delta && (
         <div style={{ fontSize: '0.68rem', color: '#64748b' }}>{delta}</div>
+      )}
+    </div>
+  );
+}
+
+function TableBlock({
+  headers, rows, caption,
+}: {
+  headers: Array<{ key: string; label: string; align?: 'left' | 'center' | 'right' }>;
+  rows: Array<Record<string, unknown>>;
+  caption?: string;
+}) {
+  return (
+    <div style={{ margin: '0.75rem 0', overflowX: 'auto' }}>
+      <table style={{
+        width: '100%',
+        borderCollapse: 'collapse',
+        fontSize: '0.75rem',
+        border: '1px solid #e2e8f0',
+        borderRadius: '0.375rem',
+      }}>
+        <thead>
+          <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+            {headers.map((h) => (
+              <th key={h.key} style={{
+                padding: '0.5rem 0.75rem',
+                textAlign: h.align ?? 'left',
+                fontWeight: 600,
+                color: '#475569',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}>
+                {h.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: i % 2 === 0 ? 'white' : '#fafafa' }}>
+              {headers.map((h) => (
+                <td key={h.key} style={{
+                  padding: '0.5rem 0.75rem',
+                  textAlign: h.align ?? 'left',
+                  color: '#374151',
+                }}>
+                  {String(row[h.key] ?? '')}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {caption && (
+        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.375rem', textAlign: 'center', fontStyle: 'italic' }}>
+          {caption}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ImageBlock({
+  src, alt, caption, width,
+}: {
+  src: string;
+  alt: string;
+  caption?: string;
+  width?: number | string;
+}) {
+  return (
+    <div style={{ margin: '0.75rem 0', textAlign: 'center' }}>
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          maxWidth: '100%',
+          width: width ?? 'auto',
+          borderRadius: '0.5rem',
+          border: '1px solid #e2e8f0',
+        }}
+      />
+      {caption && (
+        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.375rem', fontStyle: 'italic' }}>
+          {caption}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuoteBlock({
+  text, author, source,
+}: {
+  text: string;
+  author?: string;
+  source?: string;
+}) {
+  return (
+    <blockquote style={{
+      margin: '0.75rem 0',
+      padding: '0.75rem 1rem',
+      borderLeft: '4px solid #6366f1',
+      backgroundColor: '#f8fafc',
+      fontStyle: 'italic',
+      color: '#475569',
+      fontSize: '0.85rem',
+      lineHeight: 1.65,
+    }}>
+      <p style={{ margin: '0 0 0.5rem 0' }}>{text}</p>
+      {(author || source) && (
+        <footer style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'normal' }}>
+          {author && <span>— {author}</span>}
+          {author && source && <span>, </span>}
+          {source && <cite>{source}</cite>}
+        </footer>
+      )}
+    </blockquote>
+  );
+}
+
+function DataVizBlock({
+  chartType, title, data, config,
+}: {
+  chartType: 'line' | 'bar' | 'pie' | 'scatter' | 'area' | 'sparkline';
+  title?: string;
+  data: Array<{ x: string | number; y: number; label?: string }>;
+  config?: Record<string, unknown>;
+}) {
+  // Simple sparkline implementation for now
+  if (chartType === 'sparkline') {
+    const values = data.map(d => d.y);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+
+    return (
+      <div style={{ margin: '0.5rem 0', display: 'inline-flex', alignItems: 'flex-end', gap: '1px', height: '24px' }}>
+        {values.map((v, i) => {
+          const height = ((v - min) / range) * 20 + 4;
+          return (
+            <div key={i} style={{
+              width: '3px',
+              height: `${height}px`,
+              backgroundColor: '#6366f1',
+              borderRadius: '1px',
+            }} />
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Placeholder for other chart types
+  return (
+    <div style={{
+      margin: '0.75rem 0',
+      padding: '1rem',
+      backgroundColor: '#f8fafc',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.5rem',
+      textAlign: 'center',
+    }}>
+      {title && <div style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.8rem' }}>{title}</div>}
+      <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+        [{chartType} chart with {data.length} data points]
+      </div>
+      <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+        Charting library integration required
+      </div>
+    </div>
+  );
+}
+
+function EmbedBlock({
+  url, fallbackText, height,
+}: {
+  url: string;
+  fallbackText?: string;
+  height?: number | string;
+}) {
+  return (
+    <div style={{ margin: '0.75rem 0' }}>
+      <iframe
+        src={url}
+        style={{
+          width: '100%',
+          height: height ?? 400,
+          border: '1px solid #e2e8f0',
+          borderRadius: '0.5rem',
+        }}
+        title="Embedded content"
+      />
+      {fallbackText && (
+        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.375rem', textAlign: 'center' }}>
+          {fallbackText}
+        </div>
       )}
     </div>
   );

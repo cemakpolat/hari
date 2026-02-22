@@ -73,6 +73,53 @@ const DividerBlockSchema = z.object({
   type: z.literal('divider'),
 });
 
+const TableBlockSchema = z.object({
+  type: z.literal('table'),
+  /** Table headers with optional alignment */
+  headers: z.array(z.object({
+    key: z.string(),
+    label: z.string(),
+    align: z.enum(['left', 'center', 'right']).default('left'),
+  })),
+  /** Array of row objects, keys must match header keys */
+  rows: z.array(z.record(z.string(), z.unknown())),
+  caption: z.string().optional(),
+});
+
+const ImageBlockSchema = z.object({
+  type: z.literal('image'),
+  src: z.string(), // URL or data URI
+  alt: z.string(),
+  caption: z.string().optional(),
+  width: z.union([z.number(), z.string()]).optional(),
+});
+
+const QuoteBlockSchema = z.object({
+  type: z.literal('quote'),
+  text: z.string().min(1),
+  author: z.string().optional(),
+  source: z.string().optional(),
+});
+
+const DataVizBlockSchema = z.object({
+  type: z.literal('dataviz'),
+  chartType: z.enum(['line', 'bar', 'pie', 'scatter', 'area', 'sparkline']),
+  title: z.string().optional(),
+  data: z.array(z.object({
+    x: z.union([z.string(), z.number()]),
+    y: z.number(),
+    label: z.string().optional(),
+  })),
+  config: z.record(z.string(), z.unknown()).optional(),
+});
+
+const EmbedBlockSchema = z.object({
+  type: z.literal('embed'),
+  url: z.string(),
+  fallbackText: z.string().optional(),
+  height: z.union([z.number(), z.string()]).optional(),
+});
+
 export const DocumentBlockSchema = z.discriminatedUnion('type', [
   HeadingBlockSchema,
   ParagraphBlockSchema,
@@ -81,6 +128,11 @@ export const DocumentBlockSchema = z.discriminatedUnion('type', [
   CalloutBlockSchema,
   MetricBlockSchema,
   DividerBlockSchema,
+  TableBlockSchema,
+  ImageBlockSchema,
+  QuoteBlockSchema,
+  DataVizBlockSchema,
+  EmbedBlockSchema,
 ]);
 
 export type DocumentBlock = z.infer<typeof DocumentBlockSchema>;
@@ -119,6 +171,14 @@ export const DocumentDataSchema = z.object({
   summary: z.string().optional(),
   /** Document revision counter — incremented on each agent update. */
   revision: z.number().int().positive().optional(),
+  /** Whether this document auto-refreshes (living document) */
+  refreshable: z.boolean().default(false),
+  /** Refresh interval in seconds (if refreshable) */
+  refreshInterval: z.number().optional(),
+  /** Data sources used to generate this document */
+  sources: z.array(z.string()).optional(),
+  /** Tags for categorization and filtering */
+  tags: z.array(z.string()).default([]),
 });
 
 export type DocumentData = z.infer<typeof DocumentDataSchema>;

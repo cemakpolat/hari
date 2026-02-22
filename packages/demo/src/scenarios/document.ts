@@ -22,6 +22,8 @@ const documentData: DocumentData = {
     'A spike in write latency caused replication lag to exceed 45 s on the primary ' +
     'replica.  The incident was contained within 23 minutes; no data loss occurred. ' +
     'Root cause: a poorly-indexed bulk-import job saturated the WAL writer thread.',
+  refreshable: false,
+  tags: ['incident', 'database', 'post-mortem', 'sre'],
 
   sections: [
     {

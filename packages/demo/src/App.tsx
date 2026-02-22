@@ -22,6 +22,8 @@ import { travelIntent } from './scenarios/travel';
 import { cloudopsIntent } from './scenarios/cloudops';
 import { iotIntent } from './scenarios/iot';
 import { documentIntent } from './scenarios/document';
+import { formDeploymentIntent } from './scenarios/form-deployment';
+import { documentProductAnalysisIntent } from './scenarios/document-product-analysis';
 import {
   makeIotMutator,
   makeCloudopsMutator,
@@ -34,10 +36,13 @@ telemetry.enable();
 // ─────────────────────────────────────────────────────────────────────────────
 // Demo Application — HARI v0.1
 //
-// Three complete scenarios demonstrating the full HARI architecture:
-//   1. Travel     — flight comparison, price/comfort negotiation
-//   2. CloudOps   — incident dashboard, blast-radius confirm
-//   3. IoT        — sensor grid, new domain (extensibility demo)
+// Six complete scenarios demonstrating the full HARI architecture:
+//   1. Travel             — flight comparison, price/comfort negotiation
+//   2. CloudOps           — incident dashboard, blast-radius confirm
+//   3. IoT                — sensor grid, new domain (extensibility demo)
+//   4. SRE Post-Mortem    — living document with AI confidence
+//   5. Deployment Config  — form with validation, conditional fields
+//   6. Product Analysis   — rich document with tables, charts, quotes
 //
 // Transport: MockAgentBridge simulates real agent roundtrips —
 //   - loadScenario() → emits 'intent' → useAgentBridge → setIntent
@@ -49,12 +54,14 @@ const SCENARIOS: Record<string, { label: string; intent: IntentPayloadInput; emo
   travel:   { label: 'Travel',   emoji: '✈', intent: travelIntent   },
   cloudops: { label: 'CloudOps', emoji: '🖥', intent: cloudopsIntent },
   iot:      { label: 'IoT',      emoji: '📡', intent: iotIntent      },
-  document: { label: 'Document', emoji: '📄', intent: documentIntent },
+  document: { label: 'SRE Post-Mortem', emoji: '📄', intent: documentIntent },
+  form:     { label: 'Deploy Config',   emoji: '⚙', intent: formDeploymentIntent },
+  analysis: { label: 'Product Analysis', emoji: '📊', intent: documentProductAnalysisIntent },
 };
 
 // Registered domains/intent-types for capability manifest
-const REGISTERED_DOMAINS = ['travel', 'cloudops', 'iot', 'reports'];
-const REGISTERED_INTENT_TYPES = ['comparison', 'diagnostic_overview', 'sensor_overview', 'document'];
+const REGISTERED_DOMAINS = ['travel', 'cloudops', 'iot', 'reports', 'deployment', 'product-analytics'];
+const REGISTERED_INTENT_TYPES = ['comparison', 'diagnostic_overview', 'sensor_overview', 'document', 'form'];
 
 const capabilityManifest = buildCapabilityManifest(
   REGISTERED_DOMAINS,

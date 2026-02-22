@@ -7,6 +7,7 @@ import {
   MetricCard,
   SensorCard,
   DocumentRenderer,
+  FormRenderer,
   type FlightOption,
   type MetricData,
   type SensorReading,
@@ -223,6 +224,43 @@ registry.register('reports', 'document', {
   operator:  () => DocumentWrapper,
   expert:    () => DocumentWrapper,
   default:   () => DocumentWrapper,
+});
+
+// ── Product Analytics / document ──────────────────────────────────────────────
+
+registry.register('product-analytics', 'document', {
+  default: () => DocumentWrapper,
+});
+
+// ── Deployment / form ─────────────────────────────────────────────────────────
+// Forms: agent collects structured input from the user with validation,
+// conditional visibility, and sensitive data handling.
+
+interface FormWrapperProps {
+  formId?: string;
+  sections?: unknown[];
+  density: 'executive' | 'operator' | 'expert';
+  onExplain?: (id: string) => void;
+}
+
+function FormWrapper({ formId = 'form', sections = [], density, onExplain }: FormWrapperProps) {
+  const handleSubmit = (values: Record<string, unknown>) => {
+    console.log('Form submitted:', values);
+    // In production, this would send to the agent via the bridge
+  };
+
+  return (
+    <FormRenderer
+      formId={formId}
+      sections={sections as any}
+      onSubmit={handleSubmit}
+      submitButtonLabel="Deploy Service"
+    />
+  );
+}
+
+registry.register('deployment', 'form', {
+  default: () => FormWrapper,
 });
 
 // ── Generic fallback (already handled by IntentRenderer, but here for doc purposes) ──
