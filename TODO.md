@@ -17,30 +17,46 @@
 
 ---
 
-## 🚧 In Progress (v0.2)
+## ✅ Completed (v0.2)
 
 ### Demo Integration
 - [x] Wire up form scenario to demo App.tsx scenario switcher
 - [x] Wire up product analysis scenario to demo App.tsx
 - [x] Add scenario selection in demo UI
+- [x] Add timeline scenario (API Gateway deploy history, `timeline-deployments.ts`)
+- [x] Add workflow scenario (Service onboarding wizard, `workflow-onboarding.ts`)
+- [x] Add kanban scenario (Sprint 17 board, `kanban-sprint.ts`)
+- [x] App.tsx expanded to 11 scenarios (Travel, CloudOps, IoT, SRE Doc, Form, Analysis, Calendar, OrgChart, Timeline, Workflow, Kanban)
 
 ### Component Registry
 - [x] Register FormRenderer in demo registry
 - [x] Create FormWrapper component for form intent type
 - [x] Register enhanced DocumentRenderer with new block types
+- [x] TimelineWrapper / WorkflowWrapper / KanbanWrapper registered (ops, onboarding, project + __generic__ domains)
+- [x] CalendarWrapper registered (engineering + __generic__ domains)
+- [x] TreeWrapper registered (hr + __generic__ domains)
 
 ### Enhancements Landed (v0.2.1)
 - [x] DocumentWrapper: expose search, TOC, PDF export, markdown export features
 - [x] FormWrapper: enable autoSave (localStorage draft restore) and isSubmitting state
 - [x] App.tsx REGISTERED_INTENT_TYPES: added timeline, workflow, kanban
-- [x] Architecture Notes panel updated to reflect all 6 scenarios and new renderers
+- [x] Architecture Notes panel updated to reflect all scenarios and new renderers
 
-### Testing
+### New Intent Types (v0.2.2)
+- [x] **Timeline** — deployment/incident history, density-aware, groupBy, status badges, category legend
+- [x] **Workflow** — multi-step guided wizard (info/form/confirmation/review steps), progress bar
+- [x] **Kanban** — sprint board with columns, WIP limits, priorities, assignees, tags, metadata
+- [x] **Calendar** — month/week/agenda views, all-day + timed events, on-call rotation scenario
+- [x] **Tree/Hierarchy** — interactive expand/collapse, search, breadcrumb, status dots, org chart scenario
+
+### Testing (v0.2.2)
 - [x] Add unit tests for form validation logic (`packages/core/src/__tests__/form.test.ts` — 61 tests)
 - [x] Add integration tests for FormRenderer (`packages/ui/src/__tests__/FormRenderer.test.tsx` — 27 tests)
 - [x] Add tests for new document block types (table, image, quote, dataviz, embed added to `document.test.ts`)
 - [x] Test conditional field visibility (covered in `form.test.ts` and `FormRenderer.test.tsx`)
 - [x] Test form submission flows (covered in `FormRenderer.test.tsx`)
+- [x] Schema tests for Timeline, Workflow, Kanban, Calendar, Tree (`new-intent-schemas.test.ts` — 66 tests; total core: 321)
+- [x] Renderer tests for Timeline, Workflow, Kanban, Calendar, Tree (`new-renderers.test.tsx` — 53 tests; total UI: 99)
 
 ---
 
@@ -65,10 +81,10 @@
 - [ ] Export to PDF/Markdown
 
 ### New Intent Types
-- [ ] **Workflow** — multi-step guided processes
-- [ ] **Timeline** — chronological event visualization
+- [x] **Workflow** — multi-step guided processes (schema + renderer + onboarding scenario)
+- [x] **Timeline** — chronological event visualization (schema + renderer + deploy history scenario)
 - [ ] **Chat/Conversation** — conversational UI pattern
-- [ ] **Kanban** — task board visualization
+- [x] **Kanban** — task board visualization (schema + renderer + sprint board scenario)
 - [x] **Calendar** — event scheduling and planning (month/week/agenda views, density-aware)
 - [x] **Tree/Hierarchy** — organizational structure visualization (interactive expand/collapse, search, breadcrumb)
 
@@ -195,4 +211,4 @@ Track user-requested features here:
 
 ---
 
-*Last updated: 2026-02-23 (v0.2.2)*
+*Last updated: 2026-02-23 (v0.2.3)*

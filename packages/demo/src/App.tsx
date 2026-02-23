@@ -26,6 +26,9 @@ import { formDeploymentIntent } from './scenarios/form-deployment';
 import { documentProductAnalysisIntent } from './scenarios/document-product-analysis';
 import { calendarOnCallIntent } from './scenarios/calendar-oncall';
 import { treeOrgChartIntent } from './scenarios/tree-org-chart';
+import { timelineDeploymentsIntent } from './scenarios/timeline-deployments';
+import { workflowOnboardingIntent } from './scenarios/workflow-onboarding';
+import { kanbanSprintIntent } from './scenarios/kanban-sprint';
 import {
   makeIotMutator,
   makeCloudopsMutator,
@@ -38,7 +41,7 @@ telemetry.enable();
 // ─────────────────────────────────────────────────────────────────────────────
 // Demo Application — HARI v0.2
 //
-// Eight complete scenarios demonstrating the full HARI architecture:
+// Eleven complete scenarios demonstrating the full HARI architecture:
 //   1. Travel             — flight comparison, price/comfort negotiation
 //   2. CloudOps           — incident dashboard, blast-radius confirm
 //   3. IoT                — sensor grid, new domain (extensibility demo)
@@ -47,6 +50,9 @@ telemetry.enable();
 //   6. Product Analysis   — rich document with tables, charts, quotes
 //   7. On-Call Schedule   — calendar with month/week/agenda views
 //   8. Org Chart          — interactive tree with expand/collapse + search
+//   9. Deploy History     — timeline with grouping, status badges, incidents
+//  10. Service Onboarding — multi-step workflow wizard (5 steps, form + review)
+//  11. Sprint Board       — kanban with WIP limits, priorities, and metadata
 //
 // Transport: MockAgentBridge simulates real agent roundtrips —
 //   - loadScenario() → emits 'intent' → useAgentBridge → setIntent
@@ -61,8 +67,11 @@ const SCENARIOS: Record<string, { label: string; intent: IntentPayloadInput; emo
   document: { label: 'SRE Post-Mortem', emoji: '📄', intent: documentIntent },
   form:     { label: 'Deploy Config',   emoji: '⚙', intent: formDeploymentIntent },
   analysis: { label: 'Product Analysis', emoji: '📊', intent: documentProductAnalysisIntent },
-  calendar: { label: 'On-Call Schedule', emoji: '📅', intent: calendarOnCallIntent },
-  tree:     { label: 'Org Chart',        emoji: '🌳', intent: treeOrgChartIntent },
+  calendar:  { label: 'On-Call Schedule', emoji: '📅', intent: calendarOnCallIntent },
+  tree:      { label: 'Org Chart',        emoji: '🌳', intent: treeOrgChartIntent },
+  timeline:  { label: 'Deploy History',   emoji: '⏱', intent: timelineDeploymentsIntent },
+  workflow:  { label: 'Onboarding',       emoji: '🧭', intent: workflowOnboardingIntent },
+  kanban:    { label: 'Sprint Board',     emoji: '📌', intent: kanbanSprintIntent },
 };
 
 // Registered domains/intent-types for capability manifest
@@ -412,7 +421,7 @@ export function App() {
               <li>queryWhatIf → HypotheticalOverlay (bridge or fallback)</li>
               <li>useMemo resolution — component + data always in sync</li>
               <li>Two stores: Intent (committed) + UI (ephemeral)</li>
-              <li>8 scenarios: Travel, CloudOps, IoT, SRE Doc, Form, Analysis, Calendar, OrgChart</li>
+              <li>11 scenarios: Travel, CloudOps, IoT, Doc, Form, Analysis, Calendar, OrgChart, Timeline, Workflow, Kanban</li>
               <li>FormWrapper: autoSave (localStorage) + isSubmitting state</li>
               <li>DocumentWrapper: search, TOC, PDF export, markdown export</li>
               <li>TimelineWrapper / WorkflowWrapper / KanbanWrapper registered</li>
