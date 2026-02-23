@@ -209,18 +209,30 @@ interface DocumentWrapperProps {
   density: 'executive' | 'operator' | 'expert';
   onExplain?: (id: string) => void;
   showConfidence?: boolean;
+  showSearch?: boolean;
+  showToc?: boolean;
+  showPdfExport?: boolean;
 }
 
 function DocumentWrapper({
   title, sections, author, publishedAt, summary, revision,
   density, onExplain, showConfidence = true,
+  showSearch = true, showToc = true, showPdfExport = true,
 }: DocumentWrapperProps) {
+  const handleExportMarkdown = React.useCallback((markdown: string) => {
+    console.log('[DocumentWrapper] Markdown export ready:\n', markdown);
+  }, []);
+
   return (
     <DocumentRenderer
       data={{ title, sections, author, publishedAt, summary, revision }}
       density={density}
       onExplain={onExplain}
       showConfidence={showConfidence}
+      showSearch={showSearch}
+      showToc={showToc}
+      showPdfExport={showPdfExport}
+      onExportMarkdown={handleExportMarkdown}
     />
   );
 }
@@ -249,11 +261,19 @@ interface FormWrapperProps {
   onExplain?: (id: string) => void;
 }
 
-function FormWrapper({ formId = 'form', sections = [], density, onExplain }: FormWrapperProps) {
-  const handleSubmit = (values: Record<string, unknown>) => {
-    console.log('Form submitted:', values);
-    // In production, this would send to the agent via the bridge
-  };
+function FormWrapper({ formId = 'form', sections = [] }: FormWrapperProps) {
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const handleSubmit = React.useCallback(async (values: Record<string, unknown>) => {
+    setIsSubmitting(true);
+    try {
+      // Simulate agent roundtrip — replace with bridge.sendAction() in production
+      await new Promise<void>((resolve) => setTimeout(resolve, 1200));
+      console.log('[FormWrapper] Form submitted:', values);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
 
   return (
     <FormRenderer
@@ -261,6 +281,8 @@ function FormWrapper({ formId = 'form', sections = [], density, onExplain }: For
       sections={sections as any}
       onSubmit={handleSubmit}
       submitButtonLabel="Deploy Service"
+      isSubmitting={isSubmitting}
+      autoSave
     />
   );
 }

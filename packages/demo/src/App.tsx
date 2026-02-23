@@ -61,7 +61,7 @@ const SCENARIOS: Record<string, { label: string; intent: IntentPayloadInput; emo
 
 // Registered domains/intent-types for capability manifest
 const REGISTERED_DOMAINS = ['travel', 'cloudops', 'iot', 'reports', 'deployment', 'product-analytics'];
-const REGISTERED_INTENT_TYPES = ['comparison', 'diagnostic_overview', 'sensor_overview', 'document', 'form'];
+const REGISTERED_INTENT_TYPES = ['comparison', 'diagnostic_overview', 'sensor_overview', 'document', 'form', 'timeline', 'workflow', 'kanban'];
 
 const capabilityManifest = buildCapabilityManifest(
   REGISTERED_DOMAINS,
@@ -406,7 +406,11 @@ export function App() {
               <li>queryWhatIf → HypotheticalOverlay (bridge or fallback)</li>
               <li>useMemo resolution — component + data always in sync</li>
               <li>Two stores: Intent (committed) + UI (ephemeral)</li>
-              <li>IoT / Document = new domains with zero compiler changes</li>
+              <li>6 scenarios: Travel, CloudOps, IoT, SRE Doc, Form, Analysis</li>
+              <li>FormWrapper: autoSave (localStorage) + isSubmitting state</li>
+              <li>DocumentWrapper: search, TOC, PDF export, markdown export</li>
+              <li>TimelineWrapper / WorkflowWrapper / KanbanWrapper registered</li>
+              <li>IoT / Form / Document = new domains, zero compiler changes</li>
               <li>Telemetry: opt-in singleton, events in Negotiation Log</li>
               <li>MCPAgentBridge: JSON-RPC 2.0 over WebSocket (Phase 4)</li>
             </ul>

@@ -20,14 +20,20 @@
 ## 🚧 In Progress (v0.2)
 
 ### Demo Integration
-- [ ] Wire up form scenario to demo App.tsx scenario switcher
-- [ ] Wire up product analysis scenario to demo App.tsx
-- [ ] Add scenario selection in demo UI
+- [x] Wire up form scenario to demo App.tsx scenario switcher
+- [x] Wire up product analysis scenario to demo App.tsx
+- [x] Add scenario selection in demo UI
 
 ### Component Registry
-- [ ] Register FormRenderer in demo registry
-- [ ] Create FormWrapper component for form intent type
-- [ ] Register enhanced DocumentRenderer with new block types
+- [x] Register FormRenderer in demo registry
+- [x] Create FormWrapper component for form intent type
+- [x] Register enhanced DocumentRenderer with new block types
+
+### Enhancements Landed (v0.2.1)
+- [x] DocumentWrapper: expose search, TOC, PDF export, markdown export features
+- [x] FormWrapper: enable autoSave (localStorage draft restore) and isSubmitting state
+- [x] App.tsx REGISTERED_INTENT_TYPES: added timeline, workflow, kanban
+- [x] Architecture Notes panel updated to reflect all 6 scenarios and new renderers
 
 ### Testing
 - [x] Add unit tests for form validation logic (`packages/core/src/__tests__/form.test.ts` — 61 tests)
@@ -189,4 +195,4 @@ Track user-requested features here:
 
 ---
 
-*Last updated: 2026-02-22*
+*Last updated: 2026-02-23*
