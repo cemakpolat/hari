@@ -30,11 +30,11 @@
 - [ ] Register enhanced DocumentRenderer with new block types
 
 ### Testing
-- [ ] Add unit tests for form validation logic
-- [ ] Add integration tests for FormRenderer
-- [ ] Add tests for new document block types
-- [ ] Test conditional field visibility
-- [ ] Test form submission flows
+- [x] Add unit tests for form validation logic (`packages/core/src/__tests__/form.test.ts` — 61 tests)
+- [x] Add integration tests for FormRenderer (`packages/ui/src/__tests__/FormRenderer.test.tsx` — 27 tests)
+- [x] Add tests for new document block types (table, image, quote, dataviz, embed added to `document.test.ts`)
+- [x] Test conditional field visibility (covered in `form.test.ts` and `FormRenderer.test.tsx`)
+- [x] Test form submission flows (covered in `FormRenderer.test.tsx`)
 
 ---
 

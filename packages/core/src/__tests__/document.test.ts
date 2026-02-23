@@ -124,6 +124,209 @@ describe('DocumentBlockSchema', () => {
       DocumentBlockSchema.parse({ type: 'video', src: 'https://example.com' }),
     ).toThrow();
   });
+
+  // ── New block types ──────────────────────────────────────────────────────
+
+  it('parses a table block with headers and rows', () => {
+    const block = {
+      type: 'table',
+      headers: [
+        { key: 'name', label: 'Name', align: 'left' },
+        { key: 'value', label: 'Value', align: 'right' },
+      ],
+      rows: [{ name: 'Alpha', value: 42 }, { name: 'Beta', value: 17 }],
+      caption: 'Sample data',
+    };
+    const result = DocumentBlockSchema.parse(block);
+    expect(result.type).toBe('table');
+    if (result.type === 'table') {
+      expect(result.headers).toHaveLength(2);
+      expect(result.rows).toHaveLength(2);
+      expect(result.caption).toBe('Sample data');
+    }
+  });
+
+  it('parses a table block without caption', () => {
+    const block = {
+      type: 'table',
+      headers: [{ key: 'col', label: 'Col', align: 'center' }],
+      rows: [{ col: 'x' }],
+    };
+    const result = DocumentBlockSchema.parse(block);
+    if (result.type === 'table') {
+      expect(result.caption).toBeUndefined();
+    }
+  });
+
+  it('table header defaults align to left', () => {
+    const block = {
+      type: 'table',
+      headers: [{ key: 'id', label: 'ID' }],
+      rows: [],
+    };
+    const result = DocumentBlockSchema.parse(block);
+    if (result.type === 'table') {
+      expect(result.headers[0].align).toBe('left');
+    }
+  });
+
+  it('rejects a table header with unknown alignment', () => {
+    expect(() =>
+      DocumentBlockSchema.parse({
+        type: 'table',
+        headers: [{ key: 'col', label: 'Col', align: 'justify' }],
+        rows: [],
+      }),
+    ).toThrow();
+  });
+
+  it('parses an image block with all fields', () => {
+    const block = {
+      type: 'image',
+      src: 'https://example.com/chart.png',
+      alt: 'Performance chart',
+      caption: 'Q1 2026 results',
+      width: 800,
+    };
+    const result = DocumentBlockSchema.parse(block);
+    expect(result.type).toBe('image');
+    if (result.type === 'image') {
+      expect(result.src).toBe('https://example.com/chart.png');
+      expect(result.alt).toBe('Performance chart');
+      expect(result.caption).toBe('Q1 2026 results');
+      expect(result.width).toBe(800);
+    }
+  });
+
+  it('parses an image block with minimal fields', () => {
+    const result = DocumentBlockSchema.parse({
+      type: 'image',
+      src: '/img/logo.png',
+      alt: 'Logo',
+    });
+    if (result.type === 'image') {
+      expect(result.caption).toBeUndefined();
+      expect(result.width).toBeUndefined();
+    }
+  });
+
+  it('parses an image block with string width', () => {
+    const result = DocumentBlockSchema.parse({
+      type: 'image',
+      src: '/img/a.png',
+      alt: 'A',
+      width: '100%',
+    });
+    if (result.type === 'image') {
+      expect(result.width).toBe('100%');
+    }
+  });
+
+  it('parses a quote block with all fields', () => {
+    const block = {
+      type: 'quote',
+      text: 'The cloud is just someone else\'s computer.',
+      author: 'Anonymous',
+      source: 'Dev conference 2024',
+    };
+    const result = DocumentBlockSchema.parse(block);
+    expect(result.type).toBe('quote');
+    if (result.type === 'quote') {
+      expect(result.author).toBe('Anonymous');
+      expect(result.source).toBe('Dev conference 2024');
+    }
+  });
+
+  it('parses a quote block with text only', () => {
+    const result = DocumentBlockSchema.parse({ type: 'quote', text: 'Simple quote.' });
+    if (result.type === 'quote') {
+      expect(result.author).toBeUndefined();
+      expect(result.source).toBeUndefined();
+    }
+  });
+
+  it('rejects a quote block with empty text', () => {
+    expect(() =>
+      DocumentBlockSchema.parse({ type: 'quote', text: '' }),
+    ).toThrow();
+  });
+
+  it.each(['line', 'bar', 'pie', 'scatter', 'area', 'sparkline'] as const)(
+    'parses a %s dataviz block',
+    (chartType) => {
+      const result = DocumentBlockSchema.parse({
+        type: 'dataviz',
+        chartType,
+        data: [{ x: 'Jan', y: 100 }, { x: 'Feb', y: 120 }],
+      });
+      expect(result.type).toBe('dataviz');
+      if (result.type === 'dataviz') {
+        expect(result.chartType).toBe(chartType);
+        expect(result.data).toHaveLength(2);
+      }
+    },
+  );
+
+  it('parses a dataviz block with title and config', () => {
+    const result = DocumentBlockSchema.parse({
+      type: 'dataviz',
+      chartType: 'bar',
+      title: 'Monthly revenue',
+      data: [{ x: 'Jan', y: 5000, label: 'January' }],
+      config: { color: '#4f46e5' },
+    });
+    if (result.type === 'dataviz') {
+      expect(result.title).toBe('Monthly revenue');
+      expect(result.config).toEqual({ color: '#4f46e5' });
+      expect(result.data[0].label).toBe('January');
+    }
+  });
+
+  it('rejects a dataviz block with unknown chart type', () => {
+    expect(() =>
+      DocumentBlockSchema.parse({
+        type: 'dataviz',
+        chartType: 'heatmap',
+        data: [],
+      }),
+    ).toThrow();
+  });
+
+  it('parses an embed block with all fields', () => {
+    const result = DocumentBlockSchema.parse({
+      type: 'embed',
+      url: 'https://www.youtube.com/embed/abc123',
+      fallbackText: 'Cannot display embedded content.',
+      height: 400,
+    });
+    expect(result.type).toBe('embed');
+    if (result.type === 'embed') {
+      expect(result.fallbackText).toBe('Cannot display embedded content.');
+      expect(result.height).toBe(400);
+    }
+  });
+
+  it('parses an embed block with minimal fields', () => {
+    const result = DocumentBlockSchema.parse({
+      type: 'embed',
+      url: 'https://figma.com/embed?url=...',
+    });
+    if (result.type === 'embed') {
+      expect(result.fallbackText).toBeUndefined();
+      expect(result.height).toBeUndefined();
+    }
+  });
+
+  it('parses an embed block with string height', () => {
+    const result = DocumentBlockSchema.parse({
+      type: 'embed',
+      url: 'https://example.com',
+      height: '50vh',
+    });
+    if (result.type === 'embed') {
+      expect(result.height).toBe('50vh');
+    }
+  });
 });
 
 // ── DocumentSectionSchema ─────────────────────────────────────────────────────
