@@ -43,6 +43,14 @@ export type { WorkflowRendererProps } from './components/WorkflowRenderer';
 export { KanbanRenderer } from './components/KanbanRenderer';
 export type { KanbanRendererProps } from './components/KanbanRenderer';
 
+// Domain components — calendar
+export { CalendarRenderer } from './components/CalendarRenderer';
+export type { CalendarRendererProps } from './components/CalendarRenderer';
+
+// Domain components — tree / hierarchy
+export { TreeRenderer } from './components/TreeRenderer';
+export type { TreeRendererProps } from './components/TreeRenderer';
+
 // Hooks
 export { useAgentBridge } from './hooks/useAgentBridge';
 export type { UseAgentBridgeResult } from './hooks/useAgentBridge';

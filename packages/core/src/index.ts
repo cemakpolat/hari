@@ -8,6 +8,8 @@ export * from './schemas/form';
 export * from './schemas/timeline';
 export * from './schemas/workflow';
 export * from './schemas/kanban';
+export * from './schemas/calendar';
+export * from './schemas/tree';
 
 // Compiler
 export * from './compiler/registry';

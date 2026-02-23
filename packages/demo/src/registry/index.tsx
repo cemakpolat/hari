@@ -11,12 +11,16 @@ import {
   TimelineRenderer,
   WorkflowRenderer,
   KanbanRenderer,
+  CalendarRenderer,
+  TreeRenderer,
   type FlightOption,
   type MetricData,
   type SensorReading,
   type TimelineRendererProps,
   type WorkflowRendererProps,
   type KanbanRendererProps,
+  type CalendarRendererProps,
+  type TreeRendererProps,
 } from '@hari/ui';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -408,6 +412,86 @@ registry.register('project', 'kanban', {
 
 registry.register(GENERIC_DOMAIN, 'kanban', {
   default: () => KanbanWrapper,
+});
+
+// ── Calendar intent type ──────────────────────────────────────────────────────
+// Month / week / agenda view for scheduling and planning.
+// IntentRenderer spreads compiledView.data as props; CalendarWrapper
+// reconstructs them into the `data` object that CalendarRenderer expects.
+
+interface CalendarWrapperProps extends Omit<CalendarRendererProps, 'data'> {
+  title?: unknown;
+  events?: unknown;
+  view?: unknown;
+  focusDate?: unknown;
+  weekStartsOn?: unknown;
+  executiveCap?: unknown;
+  density: 'executive' | 'operator' | 'expert';
+  onExplain?: (id: string) => void;
+}
+
+function CalendarWrapper({
+  title, events, view, focusDate, weekStartsOn, executiveCap,
+  density, onExplain,
+}: CalendarWrapperProps) {
+  return (
+    <CalendarRenderer
+      data={{ title, events, view, focusDate, weekStartsOn, executiveCap }}
+      density={density}
+      onExplain={onExplain}
+    />
+  );
+}
+
+registry.register('engineering', 'calendar', {
+  executive: () => CalendarWrapper,
+  operator:  () => CalendarWrapper,
+  expert:    () => CalendarWrapper,
+  default:   () => CalendarWrapper,
+});
+
+// Also register under generic domain so any intent with type 'calendar' works
+registry.register(GENERIC_DOMAIN, 'calendar', {
+  default: () => CalendarWrapper,
+});
+
+// ── Tree / hierarchy intent type ──────────────────────────────────────────────
+// Interactive expand/collapse tree for org charts, file systems, taxonomies.
+
+interface TreeWrapperProps extends Omit<TreeRendererProps, 'data'> {
+  title?: unknown;
+  nodes?: unknown;
+  showLines?: unknown;
+  searchable?: unknown;
+  defaultExpandAll?: unknown;
+  executiveDepth?: unknown;
+  density: 'executive' | 'operator' | 'expert';
+  onExplain?: (id: string) => void;
+}
+
+function TreeWrapper({
+  title, nodes, showLines, searchable, defaultExpandAll, executiveDepth,
+  density, onExplain,
+}: TreeWrapperProps) {
+  return (
+    <TreeRenderer
+      data={{ title, nodes, showLines, searchable, defaultExpandAll, executiveDepth }}
+      density={density}
+      onExplain={onExplain}
+    />
+  );
+}
+
+registry.register('hr', 'tree', {
+  executive: () => TreeWrapper,
+  operator:  () => TreeWrapper,
+  expert:    () => TreeWrapper,
+  default:   () => TreeWrapper,
+});
+
+// Also register under generic domain so any intent with type 'tree' works
+registry.register(GENERIC_DOMAIN, 'tree', {
+  default: () => TreeWrapper,
 });
 
 // ── Generic fallback (already handled by IntentRenderer, but here for doc purposes) ──

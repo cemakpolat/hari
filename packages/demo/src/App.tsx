@@ -24,6 +24,8 @@ import { iotIntent } from './scenarios/iot';
 import { documentIntent } from './scenarios/document';
 import { formDeploymentIntent } from './scenarios/form-deployment';
 import { documentProductAnalysisIntent } from './scenarios/document-product-analysis';
+import { calendarOnCallIntent } from './scenarios/calendar-oncall';
+import { treeOrgChartIntent } from './scenarios/tree-org-chart';
 import {
   makeIotMutator,
   makeCloudopsMutator,
@@ -34,15 +36,17 @@ import {
 telemetry.enable();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Demo Application — HARI v0.1
+// Demo Application — HARI v0.2
 //
-// Six complete scenarios demonstrating the full HARI architecture:
+// Eight complete scenarios demonstrating the full HARI architecture:
 //   1. Travel             — flight comparison, price/comfort negotiation
 //   2. CloudOps           — incident dashboard, blast-radius confirm
 //   3. IoT                — sensor grid, new domain (extensibility demo)
 //   4. SRE Post-Mortem    — living document with AI confidence
 //   5. Deployment Config  — form with validation, conditional fields
 //   6. Product Analysis   — rich document with tables, charts, quotes
+//   7. On-Call Schedule   — calendar with month/week/agenda views
+//   8. Org Chart          — interactive tree with expand/collapse + search
 //
 // Transport: MockAgentBridge simulates real agent roundtrips —
 //   - loadScenario() → emits 'intent' → useAgentBridge → setIntent
@@ -57,11 +61,13 @@ const SCENARIOS: Record<string, { label: string; intent: IntentPayloadInput; emo
   document: { label: 'SRE Post-Mortem', emoji: '📄', intent: documentIntent },
   form:     { label: 'Deploy Config',   emoji: '⚙', intent: formDeploymentIntent },
   analysis: { label: 'Product Analysis', emoji: '📊', intent: documentProductAnalysisIntent },
+  calendar: { label: 'On-Call Schedule', emoji: '📅', intent: calendarOnCallIntent },
+  tree:     { label: 'Org Chart',        emoji: '🌳', intent: treeOrgChartIntent },
 };
 
 // Registered domains/intent-types for capability manifest
-const REGISTERED_DOMAINS = ['travel', 'cloudops', 'iot', 'reports', 'deployment', 'product-analytics'];
-const REGISTERED_INTENT_TYPES = ['comparison', 'diagnostic_overview', 'sensor_overview', 'document', 'form', 'timeline', 'workflow', 'kanban'];
+const REGISTERED_DOMAINS = ['travel', 'cloudops', 'iot', 'reports', 'deployment', 'product-analytics', 'engineering', 'hr'];
+const REGISTERED_INTENT_TYPES = ['comparison', 'diagnostic_overview', 'sensor_overview', 'document', 'form', 'timeline', 'workflow', 'kanban', 'calendar', 'tree'];
 
 const capabilityManifest = buildCapabilityManifest(
   REGISTERED_DOMAINS,
@@ -406,10 +412,12 @@ export function App() {
               <li>queryWhatIf → HypotheticalOverlay (bridge or fallback)</li>
               <li>useMemo resolution — component + data always in sync</li>
               <li>Two stores: Intent (committed) + UI (ephemeral)</li>
-              <li>6 scenarios: Travel, CloudOps, IoT, SRE Doc, Form, Analysis</li>
+              <li>8 scenarios: Travel, CloudOps, IoT, SRE Doc, Form, Analysis, Calendar, OrgChart</li>
               <li>FormWrapper: autoSave (localStorage) + isSubmitting state</li>
               <li>DocumentWrapper: search, TOC, PDF export, markdown export</li>
               <li>TimelineWrapper / WorkflowWrapper / KanbanWrapper registered</li>
+              <li>CalendarWrapper: month/week/agenda, density-aware views</li>
+              <li>TreeWrapper: expand/collapse, search, breadcrumb, status dots</li>
               <li>IoT / Form / Document = new domains, zero compiler changes</li>
               <li>Telemetry: opt-in singleton, events in Negotiation Log</li>
               <li>MCPAgentBridge: JSON-RPC 2.0 over WebSocket (Phase 4)</li>

@@ -69,8 +69,8 @@
 - [ ] **Timeline** — chronological event visualization
 - [ ] **Chat/Conversation** — conversational UI pattern
 - [ ] **Kanban** — task board visualization
-- [ ] **Calendar** — event scheduling and planning
-- [ ] **Tree/Hierarchy** — organizational structure visualization
+- [x] **Calendar** — event scheduling and planning (month/week/agenda views, density-aware)
+- [x] **Tree/Hierarchy** — organizational structure visualization (interactive expand/collapse, search, breadcrumb)
 
 ### Accessibility (WCAG 2.2 AA)
 - [ ] Comprehensive keyboard navigation audit
@@ -115,8 +115,8 @@
 - [ ] Component playground
 - [ ] Intent payload builder/validator UI
 - [ ] TypeScript strict mode
-- [ ] ESLint configuration
-- [ ] Prettier configuration
+- [x] ESLint configuration (eslint.config.mjs, flat config, React + TS rules)
+- [x] Prettier configuration (.prettierrc, .prettierignore, format/format:check scripts)
 
 ### Documentation
 - [ ] Architecture decision records (ADRs)
@@ -195,4 +195,4 @@ Track user-requested features here:
 
 ---
 
-*Last updated: 2026-02-23*
+*Last updated: 2026-02-23 (v0.2.2)*
