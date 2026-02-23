@@ -164,6 +164,50 @@ export const HiddenFieldSchema = BaseFieldSchema.extend({
 
 export type HiddenField = z.infer<typeof HiddenFieldSchema>;
 
+// ─── Color Picker ─────────────────────────────────────────────────────────────
+
+export const ColorFieldSchema = BaseFieldSchema.extend({
+  type: z.literal('color'),
+  /** Optional preset swatches (hex strings) shown below the native picker. */
+  swatches: z.array(z.string()).optional(),
+});
+
+export type ColorField = z.infer<typeof ColorFieldSchema>;
+
+// ─── Date Range ───────────────────────────────────────────────────────────────
+
+export const DateRangeFieldSchema = BaseFieldSchema.extend({
+  type: z.literal('date_range'),
+  minDate: z.string().optional(), // ISO 8601 date
+  maxDate: z.string().optional(),
+  startLabel: z.string().default('Start date'),
+  endLabel: z.string().default('End date'),
+});
+
+export type DateRangeField = z.infer<typeof DateRangeFieldSchema>;
+
+/** Value shape emitted by DateRange fields */
+export interface DateRangeValue {
+  start: string;
+  end: string;
+}
+
+// ─── Autocomplete ─────────────────────────────────────────────────────────────
+
+export const AutocompleteFieldSchema = BaseFieldSchema.extend({
+  type: z.literal('autocomplete'),
+  /** Static option list filtered client-side as the user types. */
+  options: z.array(FormSelectOptionSchema),
+  /** Minimum characters to type before suggestions appear. */
+  minChars: z.number().default(1),
+  /** Maximum number of suggestions to display at once. */
+  maxSuggestions: z.number().default(8),
+  /** Allow free-form text that doesn't match any option. */
+  allowCustomValue: z.boolean().default(false),
+});
+
+export type AutocompleteField = z.infer<typeof AutocompleteFieldSchema>;
+
 // ─── Discriminated Union ──────────────────────────────────────────────────────
 
 export const FormFieldSchema = z.discriminatedUnion('type', [
@@ -176,6 +220,9 @@ export const FormFieldSchema = z.discriminatedUnion('type', [
   FileUploadFieldSchema,
   SliderFieldSchema,
   HiddenFieldSchema,
+  ColorFieldSchema,
+  DateRangeFieldSchema,
+  AutocompleteFieldSchema,
 ]);
 
 export type FormField = z.infer<typeof FormFieldSchema>;
@@ -202,6 +249,21 @@ export const FormSectionSchema = z.object({
 });
 
 export type FormSection = z.infer<typeof FormSectionSchema>;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Wizard Step — groups sections into a named step for multi-step forms
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const FormStepSchema = z.object({
+  /** Stable identifier for this step. */
+  id: z.string(),
+  /** Display title shown in the step indicator. */
+  title: z.string(),
+  /** IDs of FormSections that belong to this step. */
+  sectionIds: z.array(z.string()),
+});
+
+export type FormStep = z.infer<typeof FormStepSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Form Submission

@@ -67,6 +67,12 @@ export interface DocumentRendererProps {
    * Called with the full Markdown representation of the document.
    */
   onExportMarkdown?: (markdown: string) => void;
+  /**
+   * When true, a "Print / Save as PDF" button appears in the document header.
+   * Uses the browser's native window.print() — consumers should include a
+   * print-specific stylesheet to control the printed output.
+   */
+  showPdfExport?: boolean;
   /** Show a search input that filters sections containing the query. */
   showSearch?: boolean;
 }
@@ -96,9 +102,11 @@ function blockToMarkdown(block: DocumentBlock): string {
     case 'divider':
       return '---\n';
     case 'table': {
-      const header = `| ${block.headers.join(' | ')} |`;
+      const header = `| ${block.headers.map((h) => h.label).join(' | ')} |`;
       const sep = `| ${block.headers.map(() => '---').join(' | ')} |`;
-      const rows = block.rows.map((row) => `| ${row.join(' | ')} |`);
+      const rows = block.rows.map(
+        (row) => `| ${block.headers.map((h) => String(row[h.key] ?? '')).join(' | ')} |`,
+      );
       return [header, sep, ...rows].join('\n') + '\n';
     }
     case 'image':
@@ -152,8 +160,9 @@ function sectionMatchesQuery(section: DocumentSection, query: string): boolean {
       case 'callout':    return block.text.toLowerCase().includes(q);
       case 'quote':      return block.text.toLowerCase().includes(q);
       case 'table':
-        return block.headers.some((h) => h.toLowerCase().includes(q))
-          || block.rows.some((r) => r.some((c) => c.toLowerCase().includes(q)));
+        return block.headers.some((h) => h.label.toLowerCase().includes(q))
+          || block.rows.some((r) =>
+              Object.values(r).some((c) => String(c).toLowerCase().includes(q)));
       default: return false;
     }
   });
@@ -352,8 +361,20 @@ function ListBlock({ items, ordered }: { items: string[]; ordered: boolean }) {
 }
 
 function CodeBlock({ code, language }: { code: string; language?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(code).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => { /* clipboard denied — no-op */ });
+    }
+  };
+
   return (
     <div style={{ margin: '0.5rem 0' }}>
+      {/* Language tag */}
       {language && (
         <div style={{
           fontSize: '0.62rem', fontWeight: 600, color: '#6366f1',
@@ -364,20 +385,42 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
           {language}
         </div>
       )}
-      <pre style={{
-        margin: 0,
-        padding: '0.75rem',
-        backgroundColor: '#0f172a',
-        borderRadius: language ? '0 0.375rem 0.375rem 0.375rem' : '0.375rem',
-        border: '1px solid #1e293b',
-        fontSize: '0.72rem',
-        color: '#e2e8f0',
-        overflowX: 'auto',
-        lineHeight: 1.6,
-        whiteSpace: 'pre',
-      }}>
-        <code>{code}</code>
-      </pre>
+      {/* Code area with copy button */}
+      <div style={{ position: 'relative' }}>
+        <pre style={{
+          margin: 0,
+          padding: '0.75rem',
+          paddingRight: '4.5rem', // space for copy button
+          backgroundColor: '#0f172a',
+          borderRadius: language ? '0 0.375rem 0.375rem 0.375rem' : '0.375rem',
+          border: '1px solid #1e293b',
+          fontSize: '0.72rem',
+          color: '#e2e8f0',
+          overflowX: 'auto',
+          lineHeight: 1.6,
+          whiteSpace: 'pre',
+        }}>
+          <code>{code}</code>
+        </pre>
+        <button
+          onClick={handleCopy}
+          aria-label={copied ? 'Code copied' : 'Copy code'}
+          style={{
+            position: 'absolute', top: '0.4rem', right: '0.4rem',
+            padding: '0.2rem 0.5rem',
+            fontSize: '0.6rem', fontWeight: 600,
+            backgroundColor: copied ? '#166534' : '#1e293b',
+            color: copied ? '#bbf7d0' : '#94a3b8',
+            border: `1px solid ${copied ? '#166534' : '#334155'}`,
+            borderRadius: '0.25rem',
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -1094,6 +1137,7 @@ export function DocumentRenderer({
   showConfidence = true,
   showToc = false,
   onExportMarkdown,
+  showPdfExport = false,
   showSearch = false,
 }: DocumentRendererProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -1170,21 +1214,38 @@ export function DocumentRenderer({
             ))}
           </div>
         )}
-        {/* Export button */}
-        {onExportMarkdown && (
-          <button
-            onClick={() => onExportMarkdown(docToMarkdown(doc))}
-            style={{
-              marginTop: '0.5rem',
-              padding: '0.2rem 0.6rem',
-              fontSize: '0.65rem', fontWeight: 600,
-              backgroundColor: 'white', color: '#475569',
-              border: '1px solid #cbd5e1', borderRadius: '0.375rem',
-              cursor: 'pointer',
-            }}
-          >
-            ↓ Export .md
-          </button>
+        {/* Export buttons */}
+        {(onExportMarkdown || showPdfExport) && (
+          <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+            {onExportMarkdown && (
+              <button
+                onClick={() => onExportMarkdown(docToMarkdown(doc))}
+                style={{
+                  padding: '0.2rem 0.6rem',
+                  fontSize: '0.65rem', fontWeight: 600,
+                  backgroundColor: 'white', color: '#475569',
+                  border: '1px solid #cbd5e1', borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                }}
+              >
+                ↓ Export .md
+              </button>
+            )}
+            {showPdfExport && (
+              <button
+                onClick={() => window.print()}
+                style={{
+                  padding: '0.2rem 0.6rem',
+                  fontSize: '0.65rem', fontWeight: 600,
+                  backgroundColor: 'white', color: '#475569',
+                  border: '1px solid #cbd5e1', borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                }}
+              >
+                ⎙ Print / PDF
+              </button>
+            )}
+          </div>
         )}
       </div>
 
