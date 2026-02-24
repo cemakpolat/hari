@@ -35,6 +35,9 @@ import { timelineDeploymentsIntent } from './scenarios/timeline-deployments';
 import { workflowOnboardingIntent } from './scenarios/workflow-onboarding';
 import { kanbanSprintIntent } from './scenarios/kanban-sprint';
 import { chatSupportIntent } from './scenarios/chat-support';
+import { diagramArchitectureIntent } from './scenarios/diagram-architecture';
+import { formVoiceReportIntent } from './scenarios/form-voice-report';
+import { documentCollaborativeIntent } from './scenarios/document-collaborative';
 import { PayloadPlayground } from './components/PayloadPlayground';
 import { IntentPayloadBuilder } from './components/IntentPayloadBuilder';
 import {
@@ -47,9 +50,9 @@ import {
 telemetry.enable();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Demo Application — HARI v0.3
+// Demo Application — HARI v0.5.3
 //
-// Twelve complete scenarios demonstrating the full HARI architecture:
+// Fifteen complete scenarios demonstrating the full HARI architecture:
 //   1. Travel             — flight comparison, price/comfort negotiation
 //   2. CloudOps           — incident dashboard, blast-radius confirm
 //   3. IoT                — sensor grid, new domain (extensibility demo)
@@ -62,6 +65,9 @@ telemetry.enable();
 //  10. Service Onboarding — multi-step workflow wizard (5 steps, form + review)
 //  11. Sprint Board       — kanban with WIP limits, priorities, and metadata
 //  12. Support Chat       — chat/conversation with streaming, attachments, explainability
+//  13. Architecture       — Mermaid flowchart, graph topology, bar/area/pie charts
+//  14. Voice Report       — incident form with voice-input fields (🎙 mic → transcript)
+//  15. Live Edit (ADR)    — collaborative document editing with OT-lite + BroadcastChannel
 //
 // Transport: MockAgentBridge simulates real agent roundtrips —
 //   - loadScenario() → emits 'intent' → useAgentBridge → setIntent
@@ -82,11 +88,14 @@ const SCENARIOS: Record<string, { label: string; intent: IntentPayloadInput; emo
   workflow:  { label: 'Onboarding',       emoji: '🧭', intent: workflowOnboardingIntent },
   kanban:    { label: 'Sprint Board',     emoji: '📌', intent: kanbanSprintIntent },
   chat:      { label: 'Support Chat',     emoji: '💬', intent: chatSupportIntent },
+  diagram:   { label: 'Architecture',     emoji: '📐', intent: diagramArchitectureIntent },
+  voice:     { label: 'Voice Report',     emoji: '🎙', intent: formVoiceReportIntent },
+  collab:    { label: 'Live Edit (ADR)',   emoji: '✏️', intent: documentCollaborativeIntent },
 };
 
 // Registered domains/intent-types for capability manifest
-const REGISTERED_DOMAINS = ['travel', 'cloudops', 'iot', 'reports', 'deployment', 'product-analytics', 'engineering', 'hr', 'support'];
-const REGISTERED_INTENT_TYPES = ['comparison', 'diagnostic_overview', 'sensor_overview', 'document', 'form', 'timeline', 'workflow', 'kanban', 'calendar', 'tree', 'chat'];
+const REGISTERED_DOMAINS = ['travel', 'cloudops', 'iot', 'reports', 'deployment', 'product-analytics', 'engineering', 'hr', 'support', 'incident', 'collab'];
+const REGISTERED_INTENT_TYPES = ['comparison', 'diagnostic_overview', 'sensor_overview', 'document', 'form', 'timeline', 'workflow', 'kanban', 'calendar', 'tree', 'chat', 'diagram'];
 
 const capabilityManifest = buildCapabilityManifest(
   REGISTERED_DOMAINS,
@@ -836,6 +845,8 @@ export function App() {
               <li>CalendarWrapper: month/week/agenda, density-aware views</li>
               <li>TreeWrapper: expand/collapse, search, breadcrumb, status dots</li>
               <li>ChatWrapper: streaming support, attachments, role-aware bubbles</li>
+              <li>IncidentFormWrapper: voice field type (🎙 mic → interim transcript → field)</li>
+              <li>CollabDocumentWrapper: real-time OT-lite via BroadcastChannel + undo stack</li>
               <li>IoT / Form / Document = new domains, zero compiler changes</li>
               <li>Telemetry: opt-in singleton, events in Negotiation Log</li>
               <li>MCPAgentBridge: JSON-RPC 2.0 over WebSocket (Phase 4)</li>

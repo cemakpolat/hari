@@ -174,17 +174,160 @@ export function IntentPayloadBuilder() {
   const [zodErrors, setZodErrors] = useState<string[]>([]);
   const [exportVisible, setExportVisible] = useState(false);
 
+  // Generate default data structure based on intent type
+  const getDefaultDataForType = useCallback((type: string): string => {
+    switch (type) {
+      case 'form':
+        return JSON.stringify(
+          {
+            formId: 'my-form',
+            sections: [
+              {
+                id: 'basic',
+                title: 'Basic Information',
+                fields: [
+                  {
+                    id: 'name',
+                    type: 'text',
+                    label: 'Full Name',
+                    required: true,
+                    placeholder: 'Enter your name',
+                  },
+                ],
+              },
+            ],
+          },
+          null,
+          2,
+        );
+      case 'chat':
+        return JSON.stringify(
+          {
+            title: 'Conversation',
+            messages: [
+              {
+                id: 'msg1',
+                role: 'assistant',
+                content: 'How can I help you today?',
+                timestamp: new Date().toISOString(),
+              },
+            ],
+          },
+          null,
+          2,
+        );
+      case 'timeline':
+        return JSON.stringify(
+          {
+            title: 'Event Timeline',
+            events: [
+              {
+                id: 'e1',
+                timestamp: new Date().toISOString(),
+                title: 'Event Title',
+                description: 'Event description',
+                status: 'completed',
+              },
+            ],
+          },
+          null,
+          2,
+        );
+      case 'workflow':
+        return JSON.stringify(
+          {
+            title: 'Workflow',
+            steps: [
+              {
+                id: 'step1',
+                title: 'Step 1',
+                type: 'info',
+                content: 'Initial step',
+              },
+            ],
+            currentStepIndex: 0,
+          },
+          null,
+          2,
+        );
+      case 'kanban':
+        return JSON.stringify(
+          {
+            title: 'Board',
+            columns: [
+              {
+                id: 'col1',
+                title: 'To Do',
+                cards: [],
+              },
+            ],
+          },
+          null,
+          2,
+        );
+      case 'calendar':
+        return JSON.stringify(
+          {
+            title: 'Calendar',
+            events: [],
+          },
+          null,
+          2,
+        );
+      case 'tree':
+        return JSON.stringify(
+          {
+            title: 'Hierarchy',
+            root: {
+              id: 'root',
+              label: 'Root',
+              children: [],
+            },
+          },
+          null,
+          2,
+        );
+      case 'document':
+      default:
+        return JSON.stringify(
+          {
+            title: 'My Document',
+            sections: [
+              {
+                id: 's1',
+                title: 'Introduction',
+                confidence: 0.9,
+                collapsible: false,
+                defaultCollapsed: false,
+                blocks: [
+                  { type: 'paragraph', content: 'Edit the data field to match your intent type.' },
+                ],
+              },
+            ],
+          },
+          null,
+          2,
+        );
+    }
+  }, []);
+
   const set = useCallback(
     <K extends keyof BuilderState>(key: K) =>
       (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const raw = e.target.value;
-        setState((prev) => ({
-          ...prev,
-          [key]: key === 'confidence' ? Math.min(1, Math.max(0, parseFloat(raw) || 0)) : raw,
-        }));
+        setState((prev) => {
+          const updates: Partial<BuilderState> = {
+            [key]: key === 'confidence' ? Math.min(1, Math.max(0, parseFloat(raw) || 0)) : raw,
+          };
+          // When type changes, auto-update data to match the new type
+          if (key === 'type') {
+            updates.dataJson = getDefaultDataForType(raw);
+          }
+          return { ...prev, ...updates };
+        });
         setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
       },
-    [],
+    [getDefaultDataForType],
   );
 
   const buildResult = useMemo(() => buildPayload(state), [state]);

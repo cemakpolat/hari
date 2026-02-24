@@ -186,3 +186,116 @@ export const DocumentDataSchema = z.object({
 });
 
 export type DocumentData = z.infer<typeof DocumentDataSchema>;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Collaborative Editing — operation types for real-time document collaboration
+//
+// Documents can be edited concurrently by multiple users. Operations are
+// broadcast over a transport (WebSocket / BroadcastChannel) and applied
+// using OT-lite last-write-wins semantics for non-conflicting block edits.
+//
+// Operation types:
+//   block_edit   — replace an existing block's content
+//   block_insert — insert a new block after a given index
+//   block_delete — remove a block
+//   block_move   — move a block to a different position
+//   comment_add  — attach an inline comment to a block
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const BlockCommentSchema = z.object({
+  /** Unique comment ID */
+  commentId: z.string(),
+  /** Author collaborator ID */
+  authorId: z.string(),
+  /** Author display name (denormalised for offline access) */
+  authorName: z.string(),
+  /** Author colour (hex) */
+  authorColor: z.string(),
+  /** Comment text */
+  text: z.string().min(1),
+  /** ISO-8601 creation timestamp */
+  createdAt: z.string().datetime(),
+  /** Whether the comment has been resolved */
+  resolved: z.boolean().default(false),
+});
+
+export type BlockComment = z.infer<typeof BlockCommentSchema>;
+
+export const BlockEditOpSchema = z.object({
+  type: z.literal('block_edit'),
+  sectionId: z.string(),
+  blockIndex: z.number().int().min(0),
+  /** Complete replacement block (whole block is replaced atomically) */
+  block: DocumentBlockSchema,
+});
+
+export const BlockInsertOpSchema = z.object({
+  type: z.literal('block_insert'),
+  sectionId: z.string(),
+  /** Insert AFTER this index; use -1 to prepend */
+  afterIndex: z.number().int().min(-1),
+  block: DocumentBlockSchema,
+});
+
+export const BlockDeleteOpSchema = z.object({
+  type: z.literal('block_delete'),
+  sectionId: z.string(),
+  blockIndex: z.number().int().min(0),
+});
+
+export const BlockMoveOpSchema = z.object({
+  type: z.literal('block_move'),
+  sectionId: z.string(),
+  fromIndex: z.number().int().min(0),
+  toIndex: z.number().int().min(0),
+});
+
+export const CommentAddOpSchema = z.object({
+  type: z.literal('comment_add'),
+  sectionId: z.string(),
+  blockIndex: z.number().int().min(0),
+  comment: BlockCommentSchema,
+});
+
+export const CommentResolveOpSchema = z.object({
+  type: z.literal('comment_resolve'),
+  sectionId: z.string(),
+  blockIndex: z.number().int().min(0),
+  commentId: z.string(),
+});
+
+export const DocumentEditOperationSchema = z.discriminatedUnion('type', [
+  BlockEditOpSchema,
+  BlockInsertOpSchema,
+  BlockDeleteOpSchema,
+  BlockMoveOpSchema,
+  CommentAddOpSchema,
+  CommentResolveOpSchema,
+]);
+
+export type DocumentEditOperation = z.infer<typeof DocumentEditOperationSchema>;
+
+/**
+ * Stamped operation — wraps a DocumentEditOperation with authorship + lamport clock
+ * so remote peers can order and apply operations deterministically.
+ */
+export const StampedOperationSchema = z.object({
+  /** Globally unique operation ID */
+  opId: z.string(),
+  /** Session ID of the collaborator who issued this op */
+  authorId: z.string(),
+  /** Author display name */
+  authorName: z.string(),
+  /** Hex colour for cursors / avatars (e.g. '#6366f1') */
+  authorColor: z.string().optional(),
+  /** Lamport timestamp for causal ordering */
+  lamport: z.number().int().min(0),
+  /** Wall-clock ISO-8601 */
+  issuedAt: z.string().datetime(),
+  op: DocumentEditOperationSchema,
+});
+
+export type StampedOperation = z.infer<typeof StampedOperationSchema>;
+
+/** Comment map: sectionId → blockIndex → comments[] */
+export type BlockCommentMap = Record<string, Record<number, BlockComment[]>>;

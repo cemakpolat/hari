@@ -208,6 +208,47 @@ export const AutocompleteFieldSchema = BaseFieldSchema.extend({
 
 export type AutocompleteField = z.infer<typeof AutocompleteFieldSchema>;
 
+// ─── Voice Input ──────────────────────────────────────────────────────────────
+// A microphone button that captures speech and populates a text field.
+// Requires the Web Speech API (Chrome/Edge; graceful degradation elsewhere).
+
+export const VoiceFieldSchema = BaseFieldSchema.extend({
+  type: z.literal('voice'),
+  /**
+   * BCP-47 language tag sent to the SpeechRecognition engine.
+   * @default 'en-US'
+   */
+  language: z.string().default('en-US'),
+  /**
+   * Whether to keep the microphone open for multiple utterances.
+   * @default false
+   */
+  continuous: z.boolean().default(false),
+  /**
+   * Show interim (in-progress) transcripts as the user speaks.
+   * @default true
+   */
+  interimResults: z.boolean().default(true),
+  /**
+   * How the transcript is merged with an existing value.
+   * 'replace'      — replaces the current value
+   * 'append-space' — appends with a leading space separator
+   */
+  appendMode: z.enum(['replace', 'append', 'append-space']).default('replace'),
+  /**
+   * Human-readable hint shown below the mic button describing what to say.
+   * Example: 'Describe your symptoms in detail'
+   */
+  prompt: z.string().optional(),
+  /**
+   * Maximum recording duration in seconds before auto-stop.
+   * @default 60
+   */
+  maxDurationSeconds: z.number().default(60),
+});
+
+export type VoiceField = z.infer<typeof VoiceFieldSchema>;
+
 // ─── Discriminated Union ──────────────────────────────────────────────────────
 
 export const FormFieldSchema = z.discriminatedUnion('type', [
@@ -223,6 +264,7 @@ export const FormFieldSchema = z.discriminatedUnion('type', [
   ColorFieldSchema,
   DateRangeFieldSchema,
   AutocompleteFieldSchema,
+  VoiceFieldSchema,
 ]);
 
 export type FormField = z.infer<typeof FormFieldSchema>;

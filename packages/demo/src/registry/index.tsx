@@ -1,5 +1,6 @@
 import React from 'react';
 import { ComponentRegistryManager, GENERIC_DOMAIN, FALLBACK_INTENT } from '@hari/core';
+import type { DocumentSection } from '@hari/core';
 import {
   FlightCardExecutive,
   FlightCardOperator,
@@ -14,6 +15,8 @@ import {
   CalendarRenderer,
   TreeRenderer,
   ChatRenderer,
+  DiagramRenderer,
+  CollaborativeDocumentEditor,
   type FlightOption,
   type MetricData,
   type SensorReading,
@@ -23,6 +26,7 @@ import {
   type CalendarRendererProps,
   type TreeRendererProps,
   type ChatRendererProps,
+  type DiagramRendererProps,
 } from '@hari/ui';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -538,8 +542,172 @@ registry.register(GENERIC_DOMAIN, 'chat', {
   default: () => ChatWrapper,
 });
 
+// ── Diagram intent type ───────────────────────────────────────────────────────
+// Renders Mermaid diagrams, node/edge graphs, and bar/line/pie/area charts.
+// IntentRenderer spreads compiledView.data as props; DiagramWrapper reconstructs
+// them into the `data` object that DiagramRenderer expects.
+
+interface DiagramWrapperProps extends Omit<DiagramRendererProps, 'data'> {
+  title?: unknown;
+  description?: unknown;
+  diagrams?: unknown;
+  density: 'executive' | 'operator' | 'expert';
+  onExplain?: (id: string) => void;
+}
+
+function DiagramWrapper({
+  title, description, diagrams,
+  density, onExplain,
+}: DiagramWrapperProps) {
+  return (
+    <DiagramRenderer
+      data={{ title, description, diagrams }}
+      density={density}
+      onExplain={onExplain}
+    />
+  );
+}
+
+registry.register('engineering', 'diagram', {
+  executive: () => DiagramWrapper,
+  operator:  () => DiagramWrapper,
+  expert:    () => DiagramWrapper,
+  default:   () => DiagramWrapper,
+});
+
+// Also register under generic domain so any intent with type 'diagram' works
+registry.register(GENERIC_DOMAIN, 'diagram', {
+  default: () => DiagramWrapper,
+});
+
 // ── Generic fallback (already handled by IntentRenderer, but here for doc purposes) ──
 
 registry.register(GENERIC_DOMAIN, FALLBACK_INTENT, {
   default: () => () => null,
+});
+
+// ── Incident / form ──────────────────────────────────────────────────────────
+// Voice-enabled incident report form.
+// Uses the same FormRenderer infrastructure as deployment forms, but with
+// voice-field types and a domain-specific submit label.
+
+function IncidentFormWrapper({ formId = 'incident', sections = [] }: FormWrapperProps) {
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const handleSubmit = React.useCallback(async (values: Record<string, unknown>) => {
+    setIsSubmitting(true);
+    try {
+      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+      console.log('[IncidentFormWrapper] Incident report submitted:', values);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
+
+  return (
+    <FormRenderer
+      formId={formId}
+      sections={sections as any}
+      onSubmit={handleSubmit}
+      submitButtonLabel="Submit Incident Report"
+      isSubmitting={isSubmitting}
+      autoSave
+    />
+  );
+}
+
+registry.register('incident', 'form', {
+  default: () => IncidentFormWrapper,
+});
+
+// ── Collab / document ──────────────────────────────────────────────────────
+// Collaborative document editing via CollaborativeDocumentEditor.
+// Simulates two concurrent users via BroadcastChannel (open a second tab to
+// see live sync).
+//
+// IntentRenderer spreads compiledView.data as props, so CollabDocumentWrapper
+// receives DocumentData fields (title, sections, author, …) directly.
+
+// Palette for the demo user picker
+const DEMO_USERS: { id: string; name: string; color: string }[] = [
+  { id: 'user-alice', name: 'Alice',   color: '#6366f1' },
+  { id: 'user-bob',   name: 'Bob',     color: '#f59e0b' },
+  { id: 'user-carol', name: 'Carol',   color: '#10b981' },
+  { id: 'user-dan',   name: 'Dan',     color: '#ef4444' },
+];
+
+interface CollabDocumentWrapperProps {
+  title?: string;
+  sections?: unknown[];
+  author?: string;
+  density: 'executive' | 'operator' | 'expert';
+}
+
+function CollabDocumentWrapper({ title = 'Collaborative Document', sections = [] }: CollabDocumentWrapperProps) {
+  const [userIndex, setUserIndex] = React.useState(0);
+  const [editable, setEditable] = React.useState(true);
+  const me = DEMO_USERS[userIndex];
+
+  return (
+    <div>
+      {/* Demo controls bar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
+        padding: '0.5rem 0.75rem',
+        marginBottom: '0.75rem',
+        background: '#f8fafc',
+        border: '1px solid #e2e8f0',
+        borderRadius: '0.5rem',
+        fontSize: '0.78rem',
+      }}>
+        <span style={{ fontWeight: 600, color: '#475569' }}>Demo identity:</span>
+        {DEMO_USERS.map((u, i) => (
+          <button
+            key={u.id}
+            onClick={() => setUserIndex(i)}
+            style={{
+              padding: '0.2rem 0.65rem',
+              borderRadius: '999px',
+              border: `2px solid ${u.color}`,
+              background: i === userIndex ? u.color : 'transparent',
+              color: i === userIndex ? '#fff' : u.color,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+            }}
+          >
+            {u.name}
+          </button>
+        ))}
+        <span style={{ marginLeft: 'auto', color: '#94a3b8' }}>·</span>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#475569', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={editable}
+            onChange={(e) => setEditable(e.target.checked)}
+          />
+          Editable
+        </label>
+        <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>
+          • Open a second tab on the same page to see live sync
+        </span>
+      </div>
+
+      <CollaborativeDocumentEditor
+        key={me.id}   // remount when user changes so authorId is fresh
+        sections={sections as DocumentSection[]}
+        title={title}
+        authorId={me.id}
+        authorName={me.name}
+        authorColor={me.color}
+        channelName="hari-demo-collab"
+        editable={editable}
+        onChange={(updated) => console.log('[CollabDocumentWrapper] sections updated:', updated)}
+      />
+    </div>
+  );
+}
+
+registry.register('collab', 'document', {
+  default: () => CollabDocumentWrapper,
 });

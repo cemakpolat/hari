@@ -13,6 +13,7 @@ export * from './schemas/tree';
 export * from './schemas/chat';
 export * from './schemas/snapshot';
 export * from './schemas/presence';
+export * from './schemas/diagram';
 
 // Compiler
 export * from './compiler/registry';

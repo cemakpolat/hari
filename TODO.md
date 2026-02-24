@@ -122,16 +122,16 @@
 - [x] Bundle size optimization (sideEffects:false in both packages; splitting:true + minify:true in tsup configs; NODE_ENV inlining for dead-code elimination; bundle:analyze script; 18 new performance tests)
 
 ### Real Integrations
-- [ ] MCP server integration examples (2–3 connectors)
-- [ ] WebSocket transport for real-time updates
-- [ ] Server-Sent Events for live document refresh
-- [ ] Agent SDK integration guide
+- [x] MCP server integration examples (Model Context Protocol JSON-RPC 2.0 over WebSocket; `packages/dev-services/src/mcp-server.ts`)
+- [x] WebSocket transport for real-time updates (bi-directional WebSocket; `packages/dev-services/src/ws-server.ts`; `WebSocketAgentBridge` in core)
+- [x] Server-Sent Events for live document refresh (Server-Sent Events streaming; `packages/dev-services/src/sse-server.ts`; `SSEAgentBridge` in core)
+- [ ] Agent SDK integration guide (API docs for using transports in external applications)
 
 ### Schema Versioning
 - [x] Schema migration utilities — `migrate()`, `migrateIfNeeded()`, `needsMigration()`, `MigrationError`; chained v0.1→0.2→0.3→1.0; 39 tests (v0.3.4)
-- [ ] Backward compatibility layer (accept one major version behind, shim missing fields)
-- [ ] Version negotiation protocol
-- [ ] Capability discovery API
+- [x] Backward compatibility layer — `buildBackwardCompatibilityShim()`, `migrateWithBackwardCompatibilityShim()`; accepts one major version behind; shims missing fields (ambiguities, priorityFields, explainability, density, layoutHint, confidence)
+- [x] Version negotiation protocol — `negotiateVersion()`, `negotiateVersionFull()`, `VersionNegotiationRequest/Response`; handshake during connection setup (version.ts; 6 tests)
+- [x] Capability discovery API — `queryCapabilities()`, `buildCapabilityManifest()`, `CapabilityQuery/QueryResult`; agents adapt payload to frontend capabilities (version.ts; 11 tests)
 
 ### Hypothetical Mode
 - [x] Isolated "what-if" overlay system (HypotheticalOverlay already existed; extended with full branch state)
@@ -160,8 +160,8 @@
 ## 🎯 Research & Exploration
 
 ### Advanced Features
-- [ ] Voice input for forms
-- [ ] Collaborative editing for documents
+- [x] Voice input for forms *(done — `VoiceFieldSchema` (language/continuous/interimResults/appendMode/prompt/maxDurationSeconds); `useVoiceInput` hook with typed status machine (idle→listening→processing→error→unsupported), interim + final transcripts, confidence tracking, full error-code mapping; `VoiceMicButton` component (pulse animation, size variants sm/md/lg, confidence indicator, graceful degradation, prefers-reduced-motion); integrated as `voice` field type in FormRenderer with inline textarea for manual correction; 25 unit tests in voice-input.test.ts)*
+- [x] Collaborative editing for documents *(done — OT-lite with Lamport timestamps + LWW conflict resolution; `DocumentEditOperationSchema` discriminated union (block_edit/insert/delete/move/comment_add/comment_resolve); `StampedOperationSchema` with opId, authorId, lamport, issuedAt; `BlockCommentSchema`; `useDocumentCollaboration` hook with pluggable `CollabTransport` interface, `createBroadcastTransport()` BroadcastChannel factory, synchronous-ref state for correctness, 50-op undo stack, focusBlock/blurBlock presence ops; `CollaborativeDocumentEditor` component with per-block inline editing, colour-coded collaborator focus rings, avatar strip, comment threads with resolve, pending-op indicators, ⌘Z undo shortcut, insert-block menu; 30+ unit tests in collaborative-editing.test.ts)*
 - [ ] Offline mode with sync
 - [x] Real-time collaboration indicators *(done — Collaborator schema with displayName/color/focusedDataKey/currentAction; addCollaborator/removeCollaborator/updateCollaboratorFocus/getCollaborators actions; session-level persistence; 22 unit tests; collaborators panel in demo UI)*
 - [x] Version control for intent payloads *(done — snapshots with diff tracking; export/import JSON; create/restore/delete; 18 unit tests; snapshot UI panel in demo)*
@@ -224,4 +224,4 @@ Track user-requested features here:
 
 ---
 
-*Last updated: 2026-02-24 (v0.5.2 — Undo/redo (14 tests) + Version control snapshots (18 tests) + Real-time presence indicators (22 tests); All Advanced Features UIs in demo with save/restore/add collaborator controls; 520 core tests passing)*
+*Last updated: 2026-02-24 (v0.5.3 — Voice input for forms (useVoiceInput hook + VoiceFieldSchema + VoiceMicButton; 25 tests) + Collaborative editing for documents (useDocumentCollaboration hook + CollaborativeDocumentEditor + OT-lite Lamport clock; 30+ tests); localStorage mock in test setup fixing 2 pre-existing a11y test failures; 520 core tests passing, 309 UI tests passing)*

@@ -20,6 +20,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { FormField, FormSection, FormStep, ValidationRule, DateRangeValue } from '@hari/core';
 import { VirtualFieldList, VIRTUALIZE_THRESHOLD } from './VirtualFieldList';
+import { VoiceMicButton } from './VoiceMicButton';
 
 // ── Public props ──────────────────────────────────────────────────────────────
 
@@ -1357,6 +1358,62 @@ function renderFieldInput(
 
     case 'autocomplete':
       return <AutocompleteField field={field} value={value} onChange={onChange} onBlur={onBlur} commonInputStyles={commonInputStyles} fieldId={fieldId} />;
+
+    case 'voice': {
+      // The voice field renders a mic button; the captured transcript is stored
+      // as a plain string value just like a text field.
+      const currentText = typeof value === 'string' ? value : '';
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {/* Mic button — updates the field value when speech is captured */}
+          <VoiceMicButton
+            language={field.language}
+            continuous={field.continuous}
+            interimResults={field.interimResults}
+            appendMode={field.appendMode}
+            maxDurationSeconds={field.maxDurationSeconds}
+            onTranscript={(transcript) => onChange(transcript)}
+            prompt={field.prompt}
+            disabled={field.disabled}
+          />
+          {/* Plain textarea so the user can also type / correct the transcript */}
+          <textarea
+            id={fieldId}
+            value={currentText}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={onBlur}
+            placeholder={field.placeholder ?? 'Speak or type here…'}
+            disabled={field.disabled}
+            rows={3}
+            aria-label={`${field.label} — voice or text input`}
+            style={{
+              ...commonInputStyles,
+              resize: 'vertical',
+              fontStyle: currentText ? 'normal' : 'italic',
+            }}
+          />
+          {currentText && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => onChange('')}
+                style={{
+                  fontSize: '0.65rem',
+                  color: '#94a3b8',
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  padding: '0.1rem 0.25rem',
+                }}
+                aria-label="Clear transcript"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
 
     case 'slider':
       return (

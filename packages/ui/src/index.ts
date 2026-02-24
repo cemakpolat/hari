@@ -56,6 +56,10 @@ export type { TreeRendererProps } from './components/TreeRenderer';
 export { ChatRenderer } from './components/ChatRenderer';
 export type { ChatRendererProps } from './components/ChatRenderer';
 
+// Domain components — diagrams (mermaid, graph, chart)
+export { DiagramRenderer } from './components/DiagramRenderer';
+export type { DiagramRendererProps } from './components/DiagramRenderer';
+
 // Hooks
 export { useAgentBridge } from './hooks/useAgentBridge';
 export type { UseAgentBridgeResult } from './hooks/useAgentBridge';
@@ -64,6 +68,23 @@ export type { UseAgentBridgeResult } from './hooks/useAgentBridge';
 export { useIntersectionMount } from './hooks/useIntersectionMount';
 export type { UseIntersectionMountOptions, UseIntersectionMountResult } from './hooks/useIntersectionMount';
 export { VirtualFieldList, VIRTUALIZE_THRESHOLD } from './components/VirtualFieldList';
+
+// Voice input
+export { useVoiceInput } from './hooks/useVoiceInput';
+export type { UseVoiceInputOptions, UseVoiceInputResult, VoiceInputStatus, VoiceInputAppendMode } from './hooks/useVoiceInput';
+export { VoiceMicButton } from './components/VoiceMicButton';
+export type { VoiceMicButtonProps } from './components/VoiceMicButton';
+
+// Collaborative document editing
+export { useDocumentCollaboration, createBroadcastTransport } from './hooks/useDocumentCollaboration';
+export type {
+  UseDocumentCollaborationOptions,
+  UseDocumentCollaborationResult,
+  CollaboratorPresenceInfo,
+  CollabTransport,
+} from './hooks/useDocumentCollaboration';
+export { CollaborativeDocumentEditor } from './components/CollaborativeDocumentEditor';
+export type { CollaborativeDocumentEditorProps } from './components/CollaborativeDocumentEditor';
 
 // Utilities — color contrast (WCAG 2.2 AA compliance)
 export {
