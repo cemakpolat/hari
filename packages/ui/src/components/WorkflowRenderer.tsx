@@ -276,6 +276,8 @@ export function WorkflowRenderer({
                 key={step.id}
                 type="button"
                 onClick={() => canNavigate && goTo(i)}
+                aria-label={`Go to step ${i + 1}: ${step.title}`}
+                aria-current={isActive ? 'step' : undefined}
                 style={{
                   display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
                   width: '100%', padding: '0.4rem 0.5rem',

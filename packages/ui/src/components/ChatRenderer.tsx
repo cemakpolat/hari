@@ -219,6 +219,7 @@ function MessageBubble({ message, density, isStreaming, onExplain }: MessageBubb
           {renderMarkdownInline(message.content)}
           {isStreaming && (
             <span
+              className="chat-cursor"
               style={{
                 display: 'inline-block',
                 width: '2px',
@@ -257,6 +258,7 @@ function MessageBubble({ message, density, isStreaming, onExplain }: MessageBubb
         {density === 'expert' && message.explainElementId && (
           <button
             onClick={() => onExplain?.(message.explainElementId!)}
+            aria-label="Explain this message"
             style={{ marginTop: '0.3rem', fontSize: '0.7rem', background: 'none', border: '1px solid #d1d5db', borderRadius: '3px', padding: '1px 6px', cursor: 'pointer', color: '#6b7280' }}
           >
             Why?
@@ -314,6 +316,7 @@ function InputBar({ placeholder, allowAttachments, onSend }: InputBarProps) {
       {allowAttachments && (
         <button
           title="Attach file"
+          aria-label="Attach file"
           style={{ background: 'none', border: '1px solid #d1d5db', borderRadius: '0.375rem', padding: '0.4rem 0.5rem', cursor: 'pointer', fontSize: '1rem', color: '#6b7280', flexShrink: 0 }}
         >
           📎
@@ -410,8 +413,11 @@ export function ChatRenderer({ data, density = 'operator', onExplain, onSendMess
         </div>
       )}
 
-      {/* Inline blink animation style */}
-      <style>{`@keyframes blink { 50% { opacity: 0; } }`}</style>
+      {/* Inline blink animation style — respects prefers-reduced-motion */}
+      <style>{`
+        @keyframes blink { 50% { opacity: 0; } }
+        @media (prefers-reduced-motion: reduce) { .chat-cursor { animation: none !important; } }
+      `}</style>
 
       {/* Message list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1rem' }}>

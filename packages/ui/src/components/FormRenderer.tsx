@@ -405,6 +405,7 @@ export function FormRenderer({
             <button
               type="button"
               onClick={handleRestoreDraft}
+              aria-label="Restore saved draft"
               style={{
                 padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 600,
                 backgroundColor: '#1d4ed8', color: 'white',
@@ -416,6 +417,7 @@ export function FormRenderer({
             <button
               type="button"
               onClick={handleDiscardDraft}
+              aria-label="Discard saved draft"
               style={{
                 padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 600,
                 backgroundColor: 'white', color: '#475569',
@@ -485,6 +487,7 @@ export function FormRenderer({
               <button
                 type="button"
                 onClick={handleBack}
+                aria-label="Go to previous step"
                 style={{
                   padding: '0.625rem 1.25rem',
                   backgroundColor: 'white',
@@ -503,6 +506,7 @@ export function FormRenderer({
               <button
                 type="button"
                 onClick={handleNext}
+                aria-label="Go to next step"
                 style={{
                   padding: '0.625rem 1.5rem',
                   backgroundColor: '#4f46e5',

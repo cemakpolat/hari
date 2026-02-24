@@ -1190,6 +1190,7 @@ function SectionBlock({
           )}
           <h3
             onClick={isCollapsible ? () => setCollapsed((c) => !c) : undefined}
+            onKeyDown={isCollapsible ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCollapsed((c) => !c); } } : undefined}
             style={{
               margin: 0,
               fontSize: '0.875rem',
@@ -1329,6 +1330,7 @@ export function DocumentRenderer({
             {onExportMarkdown && (
               <button
                 onClick={() => onExportMarkdown(docToMarkdown(doc))}
+                aria-label="Export document as Markdown"
                 style={{
                   padding: '0.2rem 0.6rem',
                   fontSize: '0.65rem', fontWeight: 600,
@@ -1343,6 +1345,7 @@ export function DocumentRenderer({
             {showPdfExport && (
               <button
                 onClick={() => window.print()}
+                aria-label="Print or save as PDF"
                 style={{
                   padding: '0.2rem 0.6rem',
                   fontSize: '0.65rem', fontWeight: 600,
