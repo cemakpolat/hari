@@ -110,10 +110,10 @@
 - [x] Motion/animation reduction (`prefers-reduced-motion` on blink cursor — v0.3.3)
 
 ### Trust & Validation
-- [ ] User testing of blast radius comprehension
-- [ ] A/B test confirmation delay effectiveness
-- [ ] Confidence score calibration
-- [ ] Error recovery patterns
+- [x] User testing of blast radius comprehension (BlastRadiusTestingTracker)
+- [x] A/B test confirmation delay effectiveness (ConfirmationDelayABTest)
+- [x] Confidence score calibration (ConfidenceScoreCalibrator — ECE, Brier score)
+- [x] Error recovery patterns (ErrorRecoveryTracker)
 
 ### Performance
 - [ ] Streaming JSON parser integration for progressive rendering
