@@ -7,9 +7,12 @@ import {
   checkSchemaVersion,
   buildCapabilityManifest,
   MockAgentBridge,
+  WebSocketAgentBridge,
+  SSEAgentBridge,
+  MCPAgentBridge,
   telemetry,
 } from '@hari/core';
-import type { IntentPayloadInput } from '@hari/core';
+import type { IntentPayloadInput, AgentBridge } from '@hari/core';
 import {
   IntentRenderer,
   DensitySelector,
@@ -99,6 +102,53 @@ const LIVE_MUTATORS: Record<string, (() => (intent: import('@hari/core').IntentP
 /** How often the live mutator fires (ms). */
 const LIVE_UPDATE_INTERVAL_MS = 2000;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Transport Configuration
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type TransportType = 'mock' | 'websocket' | 'sse' | 'mcp';
+
+const TRANSPORT_DEFAULTS: Record<TransportType, string> = {
+  mock: 'N/A',
+  websocket: 'ws://localhost:3001',
+  sse: 'http://localhost:3002',
+  mcp: 'ws://localhost:3003',
+};
+
+/**
+ * Create agent bridge based on transport type and configuration
+ */
+function createBridge(transportType: TransportType, config?: Record<string, string>): AgentBridge {
+  switch (transportType) {
+    case 'websocket': {
+      const url = config?.websocketUrl || TRANSPORT_DEFAULTS.websocket;
+      return new WebSocketAgentBridge({ url });
+    }
+    case 'sse': {
+      const baseUrl = config?.sseUrl || TRANSPORT_DEFAULTS.sse;
+      return new SSEAgentBridge({ baseUrl });
+    }
+    case 'mcp': {
+      const url = config?.mcpUrl || TRANSPORT_DEFAULTS.mcp;
+      return new MCPAgentBridge({ url });
+    }
+    case 'mock':
+    default:
+      return new MockAgentBridge({ connectLatencyMs: 150, roundtripLatencyMs: 400 });
+  }
+}
+
+/**
+ * Get default transport from environment or user preference
+ */
+function getDefaultTransport(): TransportType {
+  const env = (import.meta.env.VITE_TRANSPORT as string) || 'mock';
+  if (['mock', 'websocket', 'sse', 'mcp'].includes(env)) {
+    return env as TransportType;
+  }
+  return 'mock';
+}
+
 export function App() {
   const [activeView, setActiveView] = React.useState<'demo' | 'playground' | 'builder'>('demo');
   const [activeScenario, setActiveScenario] = React.useState<string>('travel');
@@ -106,6 +156,7 @@ export function App() {
   const [hypotheticalQuery, setHypotheticalQuery] = React.useState<string | null>(null);
   const [versionWarning, setVersionWarning] = React.useState<string | null>(null);
   const [isLive, setIsLive] = React.useState(false);
+  const [transportType, setTransportType] = React.useState<TransportType>(getDefaultTransport());
 
   const {
     currentIntent,
@@ -129,8 +180,8 @@ export function App() {
 
   // ── Transport bridge (stable identity across renders) ─────────────────────
   const bridge = React.useMemo(
-    () => new MockAgentBridge({ connectLatencyMs: 150, roundtripLatencyMs: 400 }),
-    [],
+    () => createBridge(transportType),
+    [transportType],
   );
 
   const { connectionState, sendModification } = useAgentBridge(bridge, capabilityManifest);
@@ -262,6 +313,24 @@ export function App() {
             </button>
           ))}
         </div>
+
+        {/* Transport selector — only shown in demo view */}
+        {activeView === 'demo' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', borderRight: '1px solid #334155', paddingRight: '0.75rem', marginRight: '0.25rem' }}>
+            <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Transport:</label>
+            <select value={transportType} onChange={(e) => setTransportType(e.target.value as TransportType)} style={{
+              padding: '0.375rem 0.5rem', borderRadius: '0.375rem', border: '1px solid #475569',
+              backgroundColor: '#1e293b', color: '#e2e8f0',
+              fontSize: '0.75rem', fontWeight: 500,
+              cursor: 'pointer',
+            }}>
+              <option value="mock">Mock (Local)</option>
+              <option value="websocket">WebSocket</option>
+              <option value="sse">Server-Sent Events</option>
+              <option value="mcp">MCP</option>
+            </select>
+          </div>
+        )}
 
         {/* Scenario tabs — only shown in demo view */}
         {activeView === 'demo' && (

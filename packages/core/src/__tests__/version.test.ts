@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { checkSchemaVersion, buildCapabilityManifest, SUPPORTED_SCHEMA_VERSION } from '../compiler/version';
+import {
+  checkSchemaVersion,
+  buildCapabilityManifest,
+  SUPPORTED_SCHEMA_VERSION,
+  negotiateVersion,
+  negotiateVersionFull,
+  queryCapabilities,
+  getSupportedSchemaVersions,
+  type VersionNegotiationRequest,
+  type CapabilityQuery,
+} from '../compiler/version';
 
 describe('checkSchemaVersion', () => {
   it('returns compatible for the current supported version', () => {
@@ -68,5 +78,180 @@ describe('buildCapabilityManifest', () => {
     expect(manifest.densityModes).toContain('executive');
     expect(manifest.densityModes).toContain('operator');
     expect(manifest.densityModes).toContain('expert');
+  });
+});
+
+describe('Version Negotiation Protocol', () => {
+  describe('negotiateVersion()', () => {
+    it('returns first agent version that frontend supports', () => {
+      const result = negotiateVersion(['1.1.0', '1.0.0'], ['1.0.0']);
+      expect(result).toBe('1.0.0');
+    });
+
+    it('returns null when no overlap', () => {
+      const result = negotiateVersion(['2.0.0', '2.1.0'], ['1.0.0']);
+      expect(result).toBeNull();
+    });
+
+    it('respects agent version precedence (first match)', () => {
+      const result = negotiateVersion(['0.3.0', '1.0.0'], ['0.3.0', '1.0.0']);
+      expect(result).toBe('0.3.0'); // Agent's best version first
+    });
+
+    it('handles single-element arrays', () => {
+      expect(negotiateVersion(['1.0.0'], ['1.0.0'])).toBe('1.0.0');
+      expect(negotiateVersion(['1.0.0'], ['2.0.0'])).toBeNull();
+    });
+
+    it('defaults to SUPPORTED_SCHEMA_VERSION', () => {
+      const result = negotiateVersion(['1.0.0']);
+      expect(result).toBe(SUPPORTED_SCHEMA_VERSION);
+    });
+  });
+
+  describe('negotiateVersionFull()', () => {
+    it('returns agreed version when common ground exists', () => {
+      const request: VersionNegotiationRequest = {
+        supportedVersions: ['1.0.0'],
+        agentId: 'agent-1',
+      };
+      const response = negotiateVersionFull(request);
+      expect(response.agreedVersion).toBe('1.0.0');
+      expect(response.warnings.length).toBe(0);
+    });
+
+    it('warns about version drift (minor difference)', () => {
+      const request: VersionNegotiationRequest = {
+        supportedVersions: ['1.5.0', '1.0.0'],
+        agentId: 'agent-2',
+      };
+      const response = negotiateVersionFull(request, ['1.0.0']);
+      expect(response.agreedVersion).toBe('1.0.0');
+      expect(response.warnings.some((w) => w.includes('drift'))).toBe(true);
+    });
+
+    it('warns about major version mismatch when no overlap', () => {
+      const request: VersionNegotiationRequest = {
+        supportedVersions: ['2.0.0'],
+        agentId: 'agent-3',
+      };
+      const response = negotiateVersionFull(request, ['1.0.0']);
+      expect(response.warnings.length).toBeGreaterThan(0);
+      expect(response.warnings[0]).toContain('No version overlap');
+    });
+
+    it('sets willApplyBackwardCompatibilityShim correctly', () => {
+      const request: VersionNegotiationRequest = {
+        supportedVersions: ['1.0.0'],
+        agentId: 'agent-4',
+      };
+      const response = negotiateVersionFull(request, ['1.0.0']);
+      expect(response.willApplyBackwardCompatibilityShim).toBe(false);
+    });
+
+    it('includes supportedVersions in response', () => {
+      const request: VersionNegotiationRequest = {
+        supportedVersions: ['1.0.0'],
+      };
+      const response = negotiateVersionFull(request, ['1.0.0', '0.3.0']);
+      expect(response.supportedVersions).toContain('1.0.0');
+      expect(response.supportedVersions).toContain('0.3.0');
+    });
+  });
+});
+
+describe('Capability Discovery API', () => {
+  describe('queryCapabilities()', () => {
+    const manifest = buildCapabilityManifest(
+      ['travel', 'ops', 'engineering'],
+      ['document', 'form', 'diagnostic'],
+    );
+
+    it('returns matching intent types', () => {
+      const query: CapabilityQuery = {
+        intentTypes: ['document', 'workflow'],
+      };
+      const result = queryCapabilities(manifest, query);
+      expect(result.supportedIntentTypes).toEqual(['document']);
+    });
+
+    it('returns matching domains', () => {
+      const query: CapabilityQuery = {
+        domains: ['travel', 'unknown'],
+      };
+      const result = queryCapabilities(manifest, query);
+      expect(result.supportedDomains).toEqual(['travel']);
+    });
+
+    it('returns matching ambiguity types', () => {
+      const query: CapabilityQuery = {
+        ambiguityTypes: ['toggle', 'unknown_type'],
+      };
+      const result = queryCapabilities(manifest, query);
+      expect(result.supportedAmbiguityTypes).toEqual(['toggle']);
+    });
+
+    it('checks minimum schema version', () => {
+      const query: CapabilityQuery = {
+        minSchemaVersion: '0.9.0',
+      };
+      const result = queryCapabilities(manifest, query);
+      expect(result.meetsMinVersion).toBe(true);
+    });
+
+    it('returns false for unmet minimum version', () => {
+      const query: CapabilityQuery = {
+        minSchemaVersion: '2.0.0',
+      };
+      const result = queryCapabilities(manifest, query);
+      expect(result.meetsMinVersion).toBe(false);
+    });
+
+    it('sets allCapabilitiesSupported when all match', () => {
+      const query: CapabilityQuery = {
+        intentTypes: ['document'],
+        domains: ['travel'],
+        ambiguityTypes: ['toggle'],
+      };
+      const result = queryCapabilities(manifest, query);
+      expect(result.allCapabilitiesSupported).toBe(true);
+    });
+
+    it('sets allCapabilitiesSupported false when any missing', () => {
+      const query: CapabilityQuery = {
+        intentTypes: ['document', 'workflow'],
+        domains: ['travel'],
+      };
+      const result = queryCapabilities(manifest, query);
+      expect(result.allCapabilitiesSupported).toBe(false);
+    });
+
+    it('returns all capabilities when query is empty', () => {
+      const query: CapabilityQuery = {};
+      const result = queryCapabilities(manifest, query);
+      expect(result.supportedIntentTypes).toEqual(manifest.supportedIntentTypes);
+      expect(result.supportedDomains).toEqual(manifest.supportedDomains);
+      expect(result.allCapabilitiesSupported).toBe(true);
+    });
+
+    it('defaults to no version requirement', () => {
+      const query: CapabilityQuery = {
+        intentTypes: ['document'],
+      };
+      const result = queryCapabilities(manifest, query);
+      expect(result.meetsMinVersion).toBe(true);
+    });
+  });
+
+  describe('getSupportedSchemaVersions()', () => {
+    it('returns array containing SUPPORTED_SCHEMA_VERSION', () => {
+      const versions = getSupportedSchemaVersions();
+      expect(versions).toContain(SUPPORTED_SCHEMA_VERSION);
+    });
+
+    it('returns non-empty array', () => {
+      const versions = getSupportedSchemaVersions();
+      expect(versions.length).toBeGreaterThan(0);
+    });
   });
 });

@@ -18,6 +18,12 @@ import {
   migrateIfNeeded,
   MigrationError,
   MIGRATION_CHAIN,
+  canMigrate,
+  isOutOfSupport,
+  getMajorVersion,
+  getMinorVersion,
+  buildBackwardCompatibilityShim,
+  migrateWithBackwardCompatibilityShim,
 } from '../compiler/migrate';
 import { SUPPORTED_SCHEMA_VERSION } from '../compiler/version';
 
@@ -311,5 +317,167 @@ describe('migrateIfNeeded()', () => {
     delete (noVersion as Record<string, unknown>).schema_version;
     const result = migrateIfNeeded(noVersion);
     expect(result.version).toBe(SUPPORTED_SCHEMA_VERSION);
+  });
+});
+
+// ── Backward Compatibility Layer ──────────────────────────────────────────────
+
+describe('Backward Compatibility Layer', () => {
+  describe('getMajorVersion() and getMinorVersion()', () => {
+    it('extracts major version number', () => {
+      expect(getMajorVersion('1.5.2')).toBe(1);
+      expect(getMajorVersion('0.3.0')).toBe(0);
+      expect(getMajorVersion('2.0.0')).toBe(2);
+    });
+
+    it('extracts minor version number', () => {
+      expect(getMinorVersion('1.5.2')).toBe(5);
+      expect(getMinorVersion('0.3.0')).toBe(3);
+      expect(getMinorVersion('2.0.0')).toBe(0);
+    });
+  });
+
+  describe('canMigrate()', () => {
+    it('accepts same major version', () => {
+      expect(canMigrate('1.0.0', '1.0.0')).toBe(true);
+      expect(canMigrate('1.5.2', '1.0.0')).toBe(true);
+    });
+
+    it('accepts one major version behind', () => {
+      expect(canMigrate('0.3.0', '1.0.0')).toBe(true);
+      expect(canMigrate('0.1.0', '1.0.0')).toBe(true);
+    });
+
+    it('rejects more than one major version behind', () => {
+      expect(canMigrate('0.1.0', '2.0.0')).toBe(false);
+      expect(canMigrate('0.3.0', '2.0.0')).toBe(false);
+    });
+
+    it('accepts unknown version (defaults to oldest)', () => {
+      expect(canMigrate('', '1.0.0')).toBe(true);
+    });
+  });
+
+  describe('isOutOfSupport()', () => {
+    it('returns false for same major version', () => {
+      expect(isOutOfSupport('1.0.0', '1.0.0')).toBe(false);
+      expect(isOutOfSupport('1.5.2', '1.0.0')).toBe(false);
+    });
+
+    it('returns false for one major version behind', () => {
+      expect(isOutOfSupport('0.3.0', '1.0.0')).toBe(false);
+      expect(isOutOfSupport('0.1.0', '1.0.0')).toBe(false);
+    });
+
+    it('returns true for more than one major version behind', () => {
+      expect(isOutOfSupport('0.1.0', '2.0.0')).toBe(true);
+      expect(isOutOfSupport('0.3.0', '2.0.0')).toBe(true);
+    });
+  });
+
+  describe('buildBackwardCompatibilityShim()', () => {
+    it('fills missing ambiguities with default []', () => {
+      const payload = { version: '1.0.0', type: 'document' };
+      const result = buildBackwardCompatibilityShim(payload);
+      expect(result.ambiguities).toEqual([]);
+    });
+
+    it('fills missing priorityFields with default []', () => {
+      const payload = { version: '1.0.0', type: 'document' };
+      const result = buildBackwardCompatibilityShim(payload);
+      expect(result.priorityFields).toEqual([]);
+    });
+
+    it('fills missing explainability with default {}', () => {
+      const payload = { version: '1.0.0', type: 'document' };
+      const result = buildBackwardCompatibilityShim(payload);
+      expect(result.explainability).toEqual({});
+    });
+
+    it('fills missing density with "operator"', () => {
+      const payload = { version: '1.0.0', type: 'document' };
+      const result = buildBackwardCompatibilityShim(payload);
+      expect(result.density).toBe('operator');
+    });
+
+    it('fills missing layoutHint with "default"', () => {
+      const payload = { version: '1.0.0', type: 'document' };
+      const result = buildBackwardCompatibilityShim(payload);
+      expect(result.layoutHint).toBe('default');
+    });
+
+    it('fills missing confidence with 0.5', () => {
+      const payload = { version: '1.0.0', type: 'document' };
+      const result = buildBackwardCompatibilityShim(payload);
+      expect(result.confidence).toBe(0.5);
+    });
+
+    it('does not overwrite existing fields', () => {
+      const payload = {
+        version: '1.0.0',
+        type: 'document',
+        ambiguities: [{ type: 'toggle', field: 'x' }],
+        density: 'expert',
+        confidence: 0.95,
+      };
+      const result = buildBackwardCompatibilityShim(payload);
+      expect(result.ambiguities).toEqual([{ type: 'toggle', field: 'x' }]);
+      expect(result.density).toBe('expert');
+      expect(result.confidence).toBe(0.95);
+    });
+
+    it('accepts custom defaults', () => {
+      const payload = { version: '1.0.0', type: 'document' };
+      const custom = { confidence: 0.9, density: 'executive' };
+      const result = buildBackwardCompatibilityShim(payload, custom);
+      expect(result.confidence).toBe(0.9);
+      expect(result.density).toBe('executive');
+    });
+  });
+
+  describe('migrateWithBackwardCompatibilityShim()', () => {
+    it('migrates and applies shim to v0.1 payload', () => {
+      const result = migrateWithBackwardCompatibilityShim(
+        V0_1_PAYLOAD,
+        '0.1.0',
+        SUPPORTED_SCHEMA_VERSION,
+      );
+      expect(result.version).toBe(SUPPORTED_SCHEMA_VERSION);
+      expect(result.type).toBe('document');
+      expect(result.ambiguities).toEqual([]);
+      expect(Array.isArray(result.priorityFields)).toBe(true);
+      expect(result.explainability).toBeDefined();
+    });
+
+    it('rejects out-of-support versions', () => {
+      expect(() => {
+        migrateWithBackwardCompatibilityShim(V0_1_PAYLOAD, '0.1.0', '2.0.0');
+      }).toThrow(MigrationError);
+    });
+
+    it('applies custom defaults', () => {
+      // Create a payload without confidence to test custom defaults
+      const payloadNoConfidence = {
+        schema_version: '0.1.0',
+        intent_type: 'document',
+        domain: 'engineering',
+        // Note: no agent_confidence here
+        primary_goal: 'Show deployment report',
+        data: {
+          payload: {
+            title: 'Deploy Report',
+            sections: [],
+          },
+        },
+      };
+      const custom = { confidence: 0.99 };
+      const result = migrateWithBackwardCompatibilityShim(
+        payloadNoConfidence,
+        '0.1.0',
+        SUPPORTED_SCHEMA_VERSION,
+        custom,
+      );
+      expect(result.confidence).toBe(0.99);
+    });
   });
 });
