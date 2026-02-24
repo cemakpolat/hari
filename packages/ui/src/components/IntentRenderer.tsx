@@ -171,6 +171,21 @@ function ActionGroup({ action, density, pending, onExecute, onConfirm, onDismiss
   const [remaining, setRemaining] = React.useState(0);
   const delay = action.safety?.confirmationDelay ?? 0;
 
+  // Focus management: save the trigger element when the confirmation dialog opens;
+  // restore it when the dialog closes (WCAG 2.4.3 Focus Order).
+  const confirmBtnRef = React.useRef<HTMLButtonElement>(null);
+  const triggerRef = React.useRef<Element | null>(null);
+  React.useEffect(() => {
+    if (pending) {
+      triggerRef.current = document.activeElement;
+      confirmBtnRef.current?.focus();
+    } else if (triggerRef.current) {
+      (triggerRef.current as HTMLElement | null)?.focus?.();
+      triggerRef.current = null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!pending]);
+
   React.useEffect(() => {
     if (!pending) {
       setDelayReady(false);
@@ -235,6 +250,7 @@ function ActionGroup({ action, density, pending, onExecute, onConfirm, onDismiss
             </span>
           )}
           <button
+            ref={confirmBtnRef}
             onClick={onConfirm}
             disabled={!delayReady}
             aria-label={delayReady ? `Confirm ${pending.label}` : `Wait ${remaining}s before confirming`}

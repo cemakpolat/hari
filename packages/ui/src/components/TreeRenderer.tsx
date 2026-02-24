@@ -205,6 +205,7 @@ function TreeNodeRow({
         {density === 'expert' && node.explainElementId && (
           <button
             onClick={(e) => { e.stopPropagation(); onExplain?.(node.explainElementId!); }}
+            aria-label={`Explain: ${node.label}`}
             title="Explain"
             style={{ fontSize: '0.65rem', background: 'none', border: '1px solid #d1d5db', borderRadius: '3px', padding: '0 4px', cursor: 'pointer', color: '#6b7280', flexShrink: 0 }}
           >
@@ -351,12 +352,14 @@ export function TreeRenderer({ data, density = 'operator', onExplain }: TreeRend
             <>
               <button
                 onClick={expandAll}
+                aria-label="Expand all nodes"
                 style={{ fontSize: '0.7rem', background: 'none', border: '1px solid #d1d5db', borderRadius: '3px', padding: '2px 8px', cursor: 'pointer', color: '#374151' }}
               >
                 Expand all
               </button>
               <button
                 onClick={collapseAll}
+                aria-label="Collapse all nodes"
                 style={{ fontSize: '0.7rem', background: 'none', border: '1px solid #d1d5db', borderRadius: '3px', padding: '2px 8px', cursor: 'pointer', color: '#374151' }}
               >
                 Collapse all

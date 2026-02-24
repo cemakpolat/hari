@@ -24,7 +24,7 @@ export { SensorCard } from './components/domain/iot/SensorCard';
 export type { SensorReading } from './components/domain/iot/SensorCard';
 
 // Domain components — documents
-export { DocumentRenderer } from './components/DocumentRenderer';
+export { DocumentRenderer, syntaxTokenize } from './components/DocumentRenderer';
 export type { DocumentRendererProps } from './components/DocumentRenderer';
 
 // Domain components — forms
@@ -50,6 +50,10 @@ export type { CalendarRendererProps } from './components/CalendarRenderer';
 // Domain components — tree / hierarchy
 export { TreeRenderer } from './components/TreeRenderer';
 export type { TreeRendererProps } from './components/TreeRenderer';
+
+// Domain components — chat / conversation
+export { ChatRenderer } from './components/ChatRenderer';
+export type { ChatRendererProps } from './components/ChatRenderer';
 
 // Hooks
 export { useAgentBridge } from './hooks/useAgentBridge';

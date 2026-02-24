@@ -128,10 +128,17 @@ export function HypotheticalOverlay({ query, onDismiss, bridge, intentSnapshot, 
   const [result, setResult] = React.useState<HypotheticalResult | null>(null);
   const [loading, setLoading] = React.useState(true);
   const dismissRef = React.useRef<HTMLButtonElement>(null);
+  // Saved reference to the element that was focused when the overlay opened
+  const triggerRef = React.useRef<Element | null>(null);
 
-  // Move focus to the dismiss button when the overlay mounts (WCAG 2.4.3 Focus Order)
+  // Move focus to the dismiss button when the overlay mounts (WCAG 2.4.3 Focus Order).
+  // On unmount, return focus to whichever element triggered the overlay.
   React.useEffect(() => {
+    triggerRef.current = document.activeElement;
     dismissRef.current?.focus();
+    return () => {
+      (triggerRef.current as HTMLElement | null)?.focus?.();
+    };
   }, []);
 
   React.useEffect(() => {

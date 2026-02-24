@@ -17,68 +17,97 @@
 
 ---
 
-## 🚧 In Progress (v0.2)
+## ✅ Completed (v0.2)
 
 ### Demo Integration
 - [x] Wire up form scenario to demo App.tsx scenario switcher
 - [x] Wire up product analysis scenario to demo App.tsx
 - [x] Add scenario selection in demo UI
+- [x] Add timeline scenario (API Gateway deploy history, `timeline-deployments.ts`)
+- [x] Add workflow scenario (Service onboarding wizard, `workflow-onboarding.ts`)
+- [x] Add kanban scenario (Sprint 17 board, `kanban-sprint.ts`)
+- [x] App.tsx expanded to 11 scenarios (Travel, CloudOps, IoT, SRE Doc, Form, Analysis, Calendar, OrgChart, Timeline, Workflow, Kanban)
 
 ### Component Registry
 - [x] Register FormRenderer in demo registry
 - [x] Create FormWrapper component for form intent type
 - [x] Register enhanced DocumentRenderer with new block types
+- [x] TimelineWrapper / WorkflowWrapper / KanbanWrapper registered (ops, onboarding, project + __generic__ domains)
+- [x] CalendarWrapper registered (engineering + __generic__ domains)
+- [x] TreeWrapper registered (hr + __generic__ domains)
 
 ### Enhancements Landed (v0.2.1)
 - [x] DocumentWrapper: expose search, TOC, PDF export, markdown export features
 - [x] FormWrapper: enable autoSave (localStorage draft restore) and isSubmitting state
 - [x] App.tsx REGISTERED_INTENT_TYPES: added timeline, workflow, kanban
-- [x] Architecture Notes panel updated to reflect all 6 scenarios and new renderers
+- [x] Architecture Notes panel updated to reflect all scenarios and new renderers
 
-### Testing
+### New Intent Types (v0.2.2)
+- [x] **Timeline** — deployment/incident history, density-aware, groupBy, status badges, category legend
+- [x] **Workflow** — multi-step guided wizard (info/form/confirmation/review steps), progress bar
+- [x] **Kanban** — sprint board with columns, WIP limits, priorities, assignees, tags, metadata
+- [x] **Calendar** — month/week/agenda views, all-day + timed events, on-call rotation scenario
+- [x] **Tree/Hierarchy** — interactive expand/collapse, search, breadcrumb, status dots, org chart scenario
+
+### Testing (v0.2.2)
 - [x] Add unit tests for form validation logic (`packages/core/src/__tests__/form.test.ts` — 61 tests)
 - [x] Add integration tests for FormRenderer (`packages/ui/src/__tests__/FormRenderer.test.tsx` — 27 tests)
 - [x] Add tests for new document block types (table, image, quote, dataviz, embed added to `document.test.ts`)
 - [x] Test conditional field visibility (covered in `form.test.ts` and `FormRenderer.test.tsx`)
 - [x] Test form submission flows (covered in `FormRenderer.test.tsx`)
+- [x] Schema tests for Timeline, Workflow, Kanban, Calendar, Tree (`new-intent-schemas.test.ts` — 66 tests; total core: 321)
+- [x] Renderer tests for Timeline, Workflow, Kanban, Calendar, Tree (`new-renderers.test.tsx` — 53 tests; total UI: 99)
 
 ---
 
-## 📋 Planned (v0.3 - Future)
+## ✅ Completed (v0.3)
+
+### New Intent Types (v0.3.0)
+- [x] **Chat/Conversation** — conversational UI pattern (schema + renderer + support chat scenario, streaming support, attachments, density-aware)
+
+### Developer Experience (v0.3.1)
+- [x] **Component Playground** (§10b) — interactive JSON editor in demo app: paste any intent payload, get live schema validation feedback + rendered output side-by-side; 12 IntentPayloadSchema round-trip tests added (core total: 349)
+
+### Enhanced Document Capabilities (v0.3.2)
+- [x] **Syntax highlighting** (§2b) — lightweight regex tokenizer in `DocumentRenderer` (no library); TS/JS/TSX/JSX, Python, Bash/Shell, JSON; keyword/string/number/comment token colours; `prefers-color-scheme` dark/light theme; 30 unit tests added (`syntax-highlight.test.ts`; UI total: 145)
+
+---
+
+## 📋 Planned (v0.4 - Future)
 
 ### Enhanced Form Capabilities
-- [ ] File upload preview and progress
-- [ ] Multi-step forms with wizard navigation
-- [ ] Form auto-save and recovery
+- [x] File upload preview and progress (done — `showPreview` + `URL.createObjectURL`)
+- [x] Multi-step forms with wizard navigation (done — `WizardStepIndicator`)
+- [x] Form auto-save and recovery (done — localStorage draft restore)
 - [ ] Rich text editor field type
-- [ ] Date range picker
-- [ ] Color picker field
-- [ ] Autocomplete/typeahead fields with async data
+- [x] Date range picker (done — `date_range` field type)
+- [x] Color picker field (done — native `<input type="color">`)
+- [x] Autocomplete/typeahead fields with async data (done — `autocomplete` field type)
 
 ### Enhanced Document Capabilities
-- [ ] Interactive code blocks with syntax highlighting library integration
-- [ ] Full charting library integration (e.g., Recharts, Chart.js)
-- [ ] Table sorting and filtering
-- [ ] Expandable/collapsible sections
-- [ ] Table of contents auto-generation
-- [ ] Document search and navigation
-- [ ] Export to PDF/Markdown
+- [x] Interactive code blocks with syntax highlighting (done — inline regex tokenizer, `syntaxTokenize` export)
+- [ ] Full charting library integration (e.g., Recharts, Chart.js) — custom SVG charts exist; external library would add scatter/area
+- [x] Table sorting and filtering (done — column sort, filter input > 4 rows)
+- [x] Expandable/collapsible sections (done — `collapsible`/`defaultCollapsed` flags)
+- [x] Table of contents auto-generation (done — `showToc` with `tocSections`)
+- [x] Document search and navigation (done — `showSearch` prop)
+- [x] Export to PDF/Markdown (done — `showPdfExport` + `onExportMarkdown`)
 
 ### New Intent Types
-- [ ] **Workflow** — multi-step guided processes
-- [ ] **Timeline** — chronological event visualization
-- [ ] **Chat/Conversation** — conversational UI pattern
-- [ ] **Kanban** — task board visualization
+- [x] **Workflow** — multi-step guided processes (schema + renderer + onboarding scenario)
+- [x] **Timeline** — chronological event visualization (schema + renderer + deploy history scenario)
+- [x] **Chat/Conversation** — conversational UI pattern (schema + renderer + support chat scenario, streaming support, attachments, density-aware)
+- [x] **Kanban** — task board visualization (schema + renderer + sprint board scenario)
 - [x] **Calendar** — event scheduling and planning (month/week/agenda views, density-aware)
 - [x] **Tree/Hierarchy** — organizational structure visualization (interactive expand/collapse, search, breadcrumb)
 
 ### Accessibility (WCAG 2.2 AA)
-- [ ] Comprehensive keyboard navigation audit
-- [ ] Screen reader optimization
-- [ ] Focus management improvements
-- [ ] ARIA label completeness check
-- [ ] Color contrast verification
-- [ ] Motion/animation reduction preferences
+- [x] Comprehensive keyboard navigation (Enter/Space on Calendar events, h3 collapsible in DocumentRenderer, tabIndex on interactive divs)
+- [x] Screen reader optimization (live regions for streaming, form errors)
+- [x] Focus management improvements (return focus to trigger on modal/drawer close)
+- [x] ARIA label completeness check (all renderers: Why?, Attach, Send, Expand/Collapse, Export, Print, step nav — v0.3.3)
+- [ ] Color contrast verification (min 4.5:1 normal text, 3:1 large text)
+- [x] Motion/animation reduction (`prefers-reduced-motion` on blink cursor — v0.3.3)
 
 ### Trust & Validation
 - [ ] User testing of blast radius comprehension
@@ -99,8 +128,8 @@
 - [ ] Agent SDK integration guide
 
 ### Schema Versioning
-- [ ] Schema migration utilities
-- [ ] Backward compatibility layer
+- [x] Schema migration utilities — `migrate()`, `migrateIfNeeded()`, `needsMigration()`, `MigrationError`; chained v0.1→0.2→0.3→1.0; 39 tests (v0.3.4)
+- [ ] Backward compatibility layer (accept one major version behind, shim missing fields)
 - [ ] Version negotiation protocol
 - [ ] Capability discovery API
 
@@ -195,4 +224,4 @@ Track user-requested features here:
 
 ---
 
-*Last updated: 2026-02-23 (v0.2.2)*
+*Last updated: 2026-02-24 (v0.3.6 — focus management: HypotheticalOverlay, ExplainPanel, ActionGroup confirmation dialog, ImageBlock lightbox all restore focus to trigger on close; img keyboard-accessible (tabIndex+Enter); 7 new focus tests; 189 UI / 388 core)*

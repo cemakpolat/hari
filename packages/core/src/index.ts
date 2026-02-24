@@ -10,11 +10,13 @@ export * from './schemas/workflow';
 export * from './schemas/kanban';
 export * from './schemas/calendar';
 export * from './schemas/tree';
+export * from './schemas/chat';
 
 // Compiler
 export * from './compiler/registry';
 export * from './compiler/compiler';
 export * from './compiler/version';
+export * from './compiler/migrate';
 
 // Stores
 export * from './store/intent';

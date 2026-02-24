@@ -158,6 +158,7 @@ function EventCard({ event, density, showTimestamps, dotColor, isLast, onExplain
           {event.explainElementId && onExplain && (
             <button
               onClick={() => onExplain(event.explainElementId!)}
+              aria-label={`Explain: ${event.title}`}
               style={{
                 background: 'none', border: '1px solid #e2e8f0', borderRadius: '0.25rem',
                 padding: '0.05rem 0.3rem', fontSize: '0.6rem', color: '#64748b',

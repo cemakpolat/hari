@@ -90,6 +90,7 @@ function KanbanCardView({ card, density, onCardClick, onExplain }: CardProps) {
         {card.explainElementId && onExplain && (
           <button
             onClick={(e) => { e.stopPropagation(); onExplain(card.explainElementId!); }}
+            aria-label={`Explain: ${card.title}`}
             style={{
               background: 'none', border: '1px solid #e2e8f0', borderRadius: '0.2rem',
               padding: '0 0.25rem', fontSize: '0.55rem', color: '#94a3b8', cursor: 'pointer',

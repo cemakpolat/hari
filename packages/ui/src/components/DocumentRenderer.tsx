@@ -16,7 +16,7 @@
 //   where DocumentWrapper reads data.showConfidence from ambiguity controls.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { DocumentDataSchema } from '@hari/core';
 import type { DocumentBlock, DocumentSection, DocumentData } from '@hari/core';
 
@@ -360,8 +360,114 @@ function ListBlock({ items, ordered }: { items: string[]; ordered: boolean }) {
   );
 }
 
+// ── Syntax highlighting ───────────────────────────────────────────────────────
+
+type SyntaxTokenType = 'keyword' | 'string' | 'number' | 'comment' | 'plain';
+
+interface SyntaxToken {
+  type: SyntaxTokenType;
+  value: string;
+}
+
+const KW_TS = ['abstract', 'any', 'as', 'async', 'await', 'boolean', 'break', 'case', 'catch', 'class', 'const', 'continue', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'false', 'finally', 'for', 'from', 'function', 'if', 'implements', 'import', 'in', 'instanceof', 'interface', 'keyof', 'let', 'never', 'new', 'null', 'number', 'object', 'of', 'private', 'protected', 'public', 'readonly', 'return', 'static', 'string', 'super', 'switch', 'this', 'throw', 'true', 'try', 'type', 'typeof', 'undefined', 'var', 'void', 'while'];
+const KW_PY = ['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'False', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'None', 'nonlocal', 'not', 'or', 'pass', 'print', 'raise', 'return', 'True', 'try', 'while', 'with', 'yield'];
+const KW_BASH = ['case', 'do', 'done', 'echo', 'elif', 'else', 'esac', 'exit', 'export', 'fi', 'for', 'function', 'if', 'in', 'local', 'return', 'then', 'until', 'while'];
+
+/** Tokenize source code into syntax token spans for a given language. */
+export function syntaxTokenize(code: string, language?: string): SyntaxToken[] {
+  const lang = (language ?? '').toLowerCase();
+  const isPy = lang === 'python' || lang === 'py';
+  const isBash = lang === 'bash' || lang === 'sh' || lang === 'shell';
+  const isJson = lang === 'json';
+  const isTs = !isPy && !isBash && !isJson;
+
+  type PatternDef = { re: string; type: SyntaxTokenType };
+  const patterns: PatternDef[] = [];
+
+  // Comments (highest priority — swallow everything else)
+  if (isPy || isBash) {
+    patterns.push({ re: '#[^\\n]*', type: 'comment' });
+  } else if (!isJson) {
+    patterns.push({ re: '\\/\\/[^\\n]*', type: 'comment' });
+    patterns.push({ re: '\\/\\*[\\s\\S]*?\\*\\/', type: 'comment' });
+  }
+
+  // Strings
+  patterns.push({ re: '"(?:\\\\.|[^"\\\\])*"', type: 'string' });
+  patterns.push({ re: "'(?:\\\\.|[^'\\\\])*'", type: 'string' });
+  if (isTs) {
+    patterns.push({ re: '`(?:\\\\.|[^`\\\\])*`', type: 'string' });
+  }
+
+  // Numbers
+  patterns.push({ re: '\\b0x[\\da-fA-F]+\\b|\\b\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b', type: 'number' });
+
+  // Keywords
+  const kwList = isPy ? KW_PY : isBash ? KW_BASH : isTs ? KW_TS : null;
+  if (kwList) {
+    patterns.push({ re: `\\b(?:${kwList.join('|')})\\b`, type: 'keyword' });
+  }
+
+  if (!patterns.length) return [{ type: 'plain', value: code }];
+
+  const combined = new RegExp(patterns.map((p) => `(${p.re})`).join('|'), 'gm');
+  const tokens: SyntaxToken[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  combined.lastIndex = 0;
+
+  while ((match = combined.exec(code)) !== null) {
+    if (match.index > lastIndex) {
+      tokens.push({ type: 'plain', value: code.slice(lastIndex, match.index) });
+    }
+    const groupIdx = match.slice(1).findIndex((g) => g !== undefined);
+    tokens.push({ type: patterns[groupIdx].type, value: match[0] });
+    lastIndex = match.index + match[0].length;
+    if (match[0].length === 0) combined.lastIndex++;
+  }
+
+  if (lastIndex < code.length) {
+    tokens.push({ type: 'plain', value: code.slice(lastIndex) });
+  }
+  return tokens;
+}
+
+// Token colours for dark / light themes
+const TOKEN_DARK: Record<SyntaxTokenType, React.CSSProperties> = {
+  keyword:  { color: '#c084fc' },
+  string:   { color: '#86efac' },
+  number:   { color: '#fdba74' },
+  comment:  { color: '#64748b', fontStyle: 'italic' },
+  plain:    { color: '#e2e8f0' },
+};
+const TOKEN_LIGHT: Record<SyntaxTokenType, React.CSSProperties> = {
+  keyword:  { color: '#7c3aed' },
+  string:   { color: '#166534' },
+  number:   { color: '#c2410c' },
+  comment:  { color: '#94a3b8', fontStyle: 'italic' },
+  plain:    { color: '#1e293b' },
+};
+
+function usePrefersDark(): boolean {
+  const mq = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  const [dark, setDark] = useState(mq?.matches ?? false);
+  useEffect(() => {
+    if (!mq) return;
+    const handler = (e: MediaQueryListEvent) => setDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [mq]);
+  return dark;
+}
+
 function CodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
+  const prefersDark = usePrefersDark();
+  const tokenColors = prefersDark ? TOKEN_DARK : TOKEN_LIGHT;
+  const bgColor = prefersDark ? '#0f172a' : '#f8fafc';
+  const borderColor = prefersDark ? '#1e293b' : '#e2e8f0';
+
+  const tokens = useMemo(() => syntaxTokenize(code, language), [code, language]);
 
   const handleCopy = () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -391,16 +497,19 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
           margin: 0,
           padding: '0.75rem',
           paddingRight: '4.5rem', // space for copy button
-          backgroundColor: '#0f172a',
+          backgroundColor: bgColor,
           borderRadius: language ? '0 0.375rem 0.375rem 0.375rem' : '0.375rem',
-          border: '1px solid #1e293b',
+          border: `1px solid ${borderColor}`,
           fontSize: '0.72rem',
-          color: '#e2e8f0',
           overflowX: 'auto',
           lineHeight: 1.6,
           whiteSpace: 'pre',
         }}>
-          <code>{code}</code>
+          <code>
+            {tokens.map((tok, i) => (
+              <span key={i} style={tokenColors[tok.type]}>{tok.value}</span>
+            ))}
+          </code>
         </pre>
         <button
           onClick={handleCopy}
@@ -639,13 +748,30 @@ function ImageBlock({
   width?: number | string;
 }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<Element | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Save the focused element when the lightbox opens; restore it when it closes.
+  useEffect(() => {
+    if (open) {
+      triggerRef.current = document.activeElement;
+      closeBtnRef.current?.focus();
+    } else if (triggerRef.current) {
+      (triggerRef.current as HTMLElement | null)?.focus?.();
+      triggerRef.current = null;
+    }
+  }, [open]);
 
   return (
     <div style={{ margin: '0.75rem 0', textAlign: 'center' }}>
       <img
         src={src}
         alt={alt}
+        tabIndex={0}
         onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true); }
+        }}
         style={{
           maxWidth: '100%',
           width: width ?? 'auto',
@@ -655,6 +781,7 @@ function ImageBlock({
           transition: 'opacity 0.15s',
         }}
         title="Click to expand"
+        aria-label={`${alt} — click or press Enter to expand`}
       />
       {caption && (
         <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.375rem', fontStyle: 'italic' }}>
@@ -688,6 +815,7 @@ function ImageBlock({
             }}
           />
           <button
+            ref={closeBtnRef}
             onClick={() => setOpen(false)}
             aria-label="Close lightbox"
             style={{
@@ -945,6 +1073,80 @@ function PieChart({
   );
 }
 
+function ScatterChart({
+  data, width = 480, height = 200,
+}: {
+  data: Array<{ x: string | number; y: number; label?: string }>;
+  width?: number;
+  height?: number;
+}) {
+  const pad = { top: 16, right: 16, bottom: 40, left: 44 };
+  const iw = width - pad.left - pad.right;
+  const ih = height - pad.top - pad.bottom;
+
+  const xs = data.map(d => Number(d.x));
+  const ys = data.map(d => d.y);
+  const minX = Math.min(...xs, 0);
+  const maxX = Math.max(...xs, 1);
+  const minY = Math.min(...ys, 0);
+  const maxY = Math.max(...ys, 1);
+  const rangeX = maxX - minX || 1;
+  const rangeY = maxY - minY || 1;
+
+  const px = (v: number) => pad.left + ((v - minX) / rangeX) * iw;
+  const py = (v: number) => pad.top + ih - ((v - minY) / rangeY) * ih;
+
+  const yTicks = 4;
+  const xTicks = 4;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', maxWidth: width, display: 'block' }}>
+      {/* Y grid + labels */}
+      {Array.from({ length: yTicks + 1 }, (_, i) => {
+        const val = minY + (rangeY / yTicks) * i;
+        const y = py(val);
+        return (
+          <g key={i}>
+            <line x1={pad.left} y1={y} x2={pad.left + iw} y2={y}
+              stroke="#e2e8f0" strokeWidth={i === 0 ? 1.5 : 0.75} />
+            <text x={pad.left - 6} y={y + 4} textAnchor="end" fontSize={9} fill="#94a3b8">
+              {val % 1 === 0 ? Math.round(val) : val.toFixed(1)}
+            </text>
+          </g>
+        );
+      })}
+      {/* X grid + labels */}
+      {Array.from({ length: xTicks + 1 }, (_, i) => {
+        const val = minX + (rangeX / xTicks) * i;
+        const x = px(val);
+        return (
+          <g key={i}>
+            <line x1={x} y1={pad.top} x2={x} y2={pad.top + ih}
+              stroke="#e2e8f0" strokeWidth={0.75} />
+            <text x={x} y={pad.top + ih + 14} textAnchor="middle" fontSize={9} fill="#64748b">
+              {val % 1 === 0 ? Math.round(val) : val.toFixed(1)}
+            </text>
+          </g>
+        );
+      })}
+      {/* Data points */}
+      {data.map((d, i) => (
+        <circle
+          key={i}
+          cx={px(Number(d.x))}
+          cy={py(d.y)}
+          r={4}
+          fill={CHART_COLORS[i % CHART_COLORS.length]}
+          opacity={0.8}
+        />
+      ))}
+      {/* Axes */}
+      <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + ih} stroke="#cbd5e1" strokeWidth={1.5} />
+      <line x1={pad.left} y1={pad.top + ih} x2={pad.left + iw} y2={pad.top + ih} stroke="#cbd5e1" strokeWidth={1.5} />
+    </svg>
+  );
+}
+
 function DataVizBlock({
   chartType, title, data, config,
 }: {
@@ -974,21 +1176,7 @@ function DataVizBlock({
   } else if (chartType === 'pie') {
     chart = <PieChart data={data} size={Math.min(w, h)} />;
   } else {
-    // scatter — simple dot plot
-    chart = (
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', maxWidth: w, display: 'block' }}>
-        <text x={w / 2} y={h / 2} textAnchor="middle" fontSize={11} fill="#94a3b8">
-          scatter ({data.length} pts)
-        </text>
-        {data.map((d, i) => {
-          const maxX = Math.max(...data.map(p => Number(p.x)), 1);
-          const maxY = Math.max(...data.map(p => p.y), 1);
-          const cx = 32 + (Number(d.x) / maxX) * (w - 48);
-          const cy = 16 + (1 - d.y / maxY) * (h - 48);
-          return <circle key={i} cx={cx} cy={cy} r={4} fill={CHART_COLORS[i % CHART_COLORS.length]} opacity={0.8} />;
-        })}
-      </svg>
-    );
+    chart = <ScatterChart data={data} width={w} height={h} />;
   }
 
   return (
@@ -1081,6 +1269,7 @@ function SectionBlock({
           )}
           <h3
             onClick={isCollapsible ? () => setCollapsed((c) => !c) : undefined}
+            onKeyDown={isCollapsible ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCollapsed((c) => !c); } } : undefined}
             style={{
               margin: 0,
               fontSize: '0.875rem',
@@ -1220,6 +1409,7 @@ export function DocumentRenderer({
             {onExportMarkdown && (
               <button
                 onClick={() => onExportMarkdown(docToMarkdown(doc))}
+                aria-label="Export document as Markdown"
                 style={{
                   padding: '0.2rem 0.6rem',
                   fontSize: '0.65rem', fontWeight: 600,
@@ -1234,6 +1424,7 @@ export function DocumentRenderer({
             {showPdfExport && (
               <button
                 onClick={() => window.print()}
+                aria-label="Print or save as PDF"
                 style={{
                   padding: '0.2rem 0.6rem',
                   fontSize: '0.65rem', fontWeight: 600,

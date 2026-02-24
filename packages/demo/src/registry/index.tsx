@@ -13,6 +13,7 @@ import {
   KanbanRenderer,
   CalendarRenderer,
   TreeRenderer,
+  ChatRenderer,
   type FlightOption,
   type MetricData,
   type SensorReading,
@@ -21,6 +22,7 @@ import {
   type KanbanRendererProps,
   type CalendarRendererProps,
   type TreeRendererProps,
+  type ChatRendererProps,
 } from '@hari/ui';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -492,6 +494,48 @@ registry.register('hr', 'tree', {
 // Also register under generic domain so any intent with type 'tree' works
 registry.register(GENERIC_DOMAIN, 'tree', {
   default: () => TreeWrapper,
+});
+
+// ── Chat / conversation intent type ───────────────────────────────────────────
+// Conversational UI: user ↔ agent message thread with streaming support.
+// IntentRenderer spreads compiledView.data as props; ChatWrapper reconstructs
+// them into the `data` object that ChatRenderer expects.
+
+interface ChatWrapperProps extends Omit<ChatRendererProps, 'data'> {
+  title?: unknown;
+  messages?: unknown;
+  streamingMessageId?: unknown;
+  inputPlaceholder?: unknown;
+  allowAttachments?: unknown;
+  readOnly?: unknown;
+  density: 'executive' | 'operator' | 'expert';
+  onExplain?: (id: string) => void;
+}
+
+function ChatWrapper({
+  title, messages, streamingMessageId, inputPlaceholder, allowAttachments, readOnly,
+  density, onExplain, onSendMessage,
+}: ChatWrapperProps) {
+  return (
+    <ChatRenderer
+      data={{ title, messages, streamingMessageId, inputPlaceholder, allowAttachments, readOnly }}
+      density={density}
+      onExplain={onExplain}
+      onSendMessage={onSendMessage}
+    />
+  );
+}
+
+registry.register('support', 'chat', {
+  executive: () => ChatWrapper,
+  operator:  () => ChatWrapper,
+  expert:    () => ChatWrapper,
+  default:   () => ChatWrapper,
+});
+
+// Also register under generic domain so any intent with type 'chat' works
+registry.register(GENERIC_DOMAIN, 'chat', {
+  default: () => ChatWrapper,
 });
 
 // ── Generic fallback (already handled by IntentRenderer, but here for doc purposes) ──

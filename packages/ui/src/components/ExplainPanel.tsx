@@ -25,6 +25,18 @@ interface Props {
 
 export function ExplainPanel({ context, onClose, onWhatIf }: Props) {
   const [whatIfInput, setWhatIfInput] = React.useState('');
+  const closeBtnRef = React.useRef<HTMLButtonElement>(null);
+  // Saved reference to the element that was focused when the panel opened
+  const triggerRef = React.useRef<Element | null>(null);
+
+  // Focus the close button on mount; restore focus to the triggering element on unmount.
+  React.useEffect(() => {
+    triggerRef.current = document.activeElement;
+    closeBtnRef.current?.focus();
+    return () => {
+      (triggerRef.current as HTMLElement | null)?.focus?.();
+    };
+  }, []);
 
   const submitWhatIf = () => {
     const q = whatIfInput.trim();
@@ -74,6 +86,7 @@ export function ExplainPanel({ context, onClose, onWhatIf }: Props) {
           </p>
         </div>
         <button
+          ref={closeBtnRef}
           onClick={onClose}
           aria-label="Close explain panel"
           style={{

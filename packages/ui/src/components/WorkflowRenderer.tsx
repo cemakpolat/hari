@@ -209,11 +209,34 @@ export function WorkflowRenderer({
     else if (!isFirst) handlePrev();
   }, [handleNext, handlePrev, isFirst]);
 
+  // Shared visually-hidden live region markup (announced when currentIndex changes)
+  const stepAnnouncement = currentStep
+    ? `Step ${currentIndex + 1} of ${wf.steps.length}: ${currentStep.title}`
+    : '';
+
   // ── Executive density: slim progress bar + current step ────────────────
 
   if (density === 'executive') {
     return (
       <div>
+        {/* Screen-reader announcement of the active step */}
+        <span
+          aria-live="polite"
+          aria-atomic="true"
+          style={{
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            padding: 0,
+            margin: '-1px',
+            overflow: 'hidden',
+            clip: 'rect(0, 0, 0, 0)',
+            whiteSpace: 'nowrap',
+            borderWidth: 0,
+          }}
+        >
+          {stepAnnouncement}
+        </span>
         {wf.title && (
           <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a', marginBottom: '0.5rem' }}>
             {wf.title}
@@ -251,6 +274,24 @@ export function WorkflowRenderer({
 
   return (
     <div>
+      {/* Screen-reader announcement of the active step */}
+      <span
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          borderWidth: 0,
+        }}
+      >
+        {stepAnnouncement}
+      </span>
       {wf.title && (
         <h3 style={{
           margin: '0 0 1rem', fontSize: '0.9rem', fontWeight: 700, color: '#0f172a',
@@ -276,6 +317,8 @@ export function WorkflowRenderer({
                 key={step.id}
                 type="button"
                 onClick={() => canNavigate && goTo(i)}
+                aria-label={`Go to step ${i + 1}: ${step.title}`}
+                aria-current={isActive ? 'step' : undefined}
                 style={{
                   display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
                   width: '100%', padding: '0.4rem 0.5rem',

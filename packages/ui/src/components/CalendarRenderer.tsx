@@ -300,6 +300,9 @@ function WeekView({ events, focus, weekStartsOn, palette, onNavigate, onExplain 
                 return (
                   <div
                     key={ev.id}
+                    role={ev.explainElementId ? 'button' : undefined}
+                    tabIndex={ev.explainElementId ? 0 : undefined}
+                    aria-label={ev.explainElementId ? `Explain: ${ev.title}` : undefined}
                     style={{
                       background: color + '18',
                       borderLeft: `3px solid ${color}`,
@@ -310,6 +313,7 @@ function WeekView({ events, focus, weekStartsOn, palette, onNavigate, onExplain 
                       ...STATUS_STYLE[ev.status ?? 'confirmed'],
                     }}
                     onClick={() => ev.explainElementId && onExplain?.(ev.explainElementId)}
+                    onKeyDown={(e) => { if (ev.explainElementId && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onExplain?.(ev.explainElementId); } }}
                   >
                     <div style={{ fontSize: '0.65rem', fontWeight: 600, color, lineHeight: 1.2 }}>{ev.title}</div>
                     {!ev.allDay && (
@@ -400,6 +404,9 @@ function AgendaView({ events, focus, palette, onNavigate, onExplain }: AgendaVie
               return (
                 <div
                   key={ev.id}
+                  role={ev.explainElementId ? 'button' : undefined}
+                  tabIndex={ev.explainElementId ? 0 : undefined}
+                  aria-label={ev.explainElementId ? `Explain: ${ev.title}` : undefined}
                   style={{
                     display: 'flex',
                     gap: '0.75rem',
@@ -412,6 +419,7 @@ function AgendaView({ events, focus, palette, onNavigate, onExplain }: AgendaVie
                     ...STATUS_STYLE[ev.status ?? 'confirmed'],
                   }}
                   onClick={() => ev.explainElementId && onExplain?.(ev.explainElementId)}
+                  onKeyDown={(e) => { if (ev.explainElementId && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onExplain?.(ev.explainElementId); } }}
                 >
                   {/* Time column */}
                   <div style={{ minWidth: '5.5rem', fontSize: '0.75rem', color: '#6b7280', flexShrink: 0 }}>
@@ -467,6 +475,7 @@ function AgendaView({ events, focus, palette, onNavigate, onExplain }: AgendaVie
                     {ev.explainElementId && (
                       <button
                         onClick={(e) => { e.stopPropagation(); onExplain?.(ev.explainElementId!); }}
+                        aria-label={`Explain: ${ev.title}`}
                         style={{ marginTop: '0.3rem', fontSize: '0.7rem', background: 'none', border: '1px solid #d1d5db', borderRadius: '3px', padding: '1px 6px', cursor: 'pointer', color: '#6b7280' }}
                       >
                         Why?
