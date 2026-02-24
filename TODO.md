@@ -102,12 +102,12 @@
 - [x] **Tree/Hierarchy** — organizational structure visualization (interactive expand/collapse, search, breadcrumb)
 
 ### Accessibility (WCAG 2.2 AA)
-- [ ] Comprehensive keyboard navigation audit
-- [ ] Screen reader optimization
-- [ ] Focus management improvements
-- [ ] ARIA label completeness check
-- [ ] Color contrast verification
-- [ ] Motion/animation reduction preferences
+- [x] Comprehensive keyboard navigation (Enter/Space on Calendar events, h3 collapsible in DocumentRenderer, tabIndex on interactive divs)
+- [ ] Screen reader optimization (live regions for streaming, form errors)
+- [ ] Focus management improvements (return focus to trigger on modal/drawer close)
+- [x] ARIA label completeness check (all renderers: Why?, Attach, Send, Expand/Collapse, Export, Print, step nav — v0.3.3)
+- [ ] Color contrast verification (min 4.5:1 normal text, 3:1 large text)
+- [x] Motion/animation reduction (`prefers-reduced-motion` on blink cursor — v0.3.3)
 
 ### Trust & Validation
 - [ ] User testing of blast radius comprehension
@@ -128,8 +128,8 @@
 - [ ] Agent SDK integration guide
 
 ### Schema Versioning
-- [ ] Schema migration utilities
-- [ ] Backward compatibility layer
+- [x] Schema migration utilities — `migrate()`, `migrateIfNeeded()`, `needsMigration()`, `MigrationError`; chained v0.1→0.2→0.3→1.0; 39 tests (v0.3.4)
+- [ ] Backward compatibility layer (accept one major version behind, shim missing fields)
 - [ ] Version negotiation protocol
 - [ ] Capability discovery API
 
@@ -224,4 +224,4 @@ Track user-requested features here:
 
 ---
 
-*Last updated: 2026-02-24 (v0.3.2 — Syntax highlighting for code blocks)*
+*Last updated: 2026-02-24 (v0.3.4 — schema migration utilities §8; scatter chart SVG with proper axes)*

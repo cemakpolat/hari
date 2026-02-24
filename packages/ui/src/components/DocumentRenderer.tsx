@@ -1054,6 +1054,80 @@ function PieChart({
   );
 }
 
+function ScatterChart({
+  data, width = 480, height = 200,
+}: {
+  data: Array<{ x: string | number; y: number; label?: string }>;
+  width?: number;
+  height?: number;
+}) {
+  const pad = { top: 16, right: 16, bottom: 40, left: 44 };
+  const iw = width - pad.left - pad.right;
+  const ih = height - pad.top - pad.bottom;
+
+  const xs = data.map(d => Number(d.x));
+  const ys = data.map(d => d.y);
+  const minX = Math.min(...xs, 0);
+  const maxX = Math.max(...xs, 1);
+  const minY = Math.min(...ys, 0);
+  const maxY = Math.max(...ys, 1);
+  const rangeX = maxX - minX || 1;
+  const rangeY = maxY - minY || 1;
+
+  const px = (v: number) => pad.left + ((v - minX) / rangeX) * iw;
+  const py = (v: number) => pad.top + ih - ((v - minY) / rangeY) * ih;
+
+  const yTicks = 4;
+  const xTicks = 4;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', maxWidth: width, display: 'block' }}>
+      {/* Y grid + labels */}
+      {Array.from({ length: yTicks + 1 }, (_, i) => {
+        const val = minY + (rangeY / yTicks) * i;
+        const y = py(val);
+        return (
+          <g key={i}>
+            <line x1={pad.left} y1={y} x2={pad.left + iw} y2={y}
+              stroke="#e2e8f0" strokeWidth={i === 0 ? 1.5 : 0.75} />
+            <text x={pad.left - 6} y={y + 4} textAnchor="end" fontSize={9} fill="#94a3b8">
+              {val % 1 === 0 ? Math.round(val) : val.toFixed(1)}
+            </text>
+          </g>
+        );
+      })}
+      {/* X grid + labels */}
+      {Array.from({ length: xTicks + 1 }, (_, i) => {
+        const val = minX + (rangeX / xTicks) * i;
+        const x = px(val);
+        return (
+          <g key={i}>
+            <line x1={x} y1={pad.top} x2={x} y2={pad.top + ih}
+              stroke="#e2e8f0" strokeWidth={0.75} />
+            <text x={x} y={pad.top + ih + 14} textAnchor="middle" fontSize={9} fill="#64748b">
+              {val % 1 === 0 ? Math.round(val) : val.toFixed(1)}
+            </text>
+          </g>
+        );
+      })}
+      {/* Data points */}
+      {data.map((d, i) => (
+        <circle
+          key={i}
+          cx={px(Number(d.x))}
+          cy={py(d.y)}
+          r={4}
+          fill={CHART_COLORS[i % CHART_COLORS.length]}
+          opacity={0.8}
+        />
+      ))}
+      {/* Axes */}
+      <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + ih} stroke="#cbd5e1" strokeWidth={1.5} />
+      <line x1={pad.left} y1={pad.top + ih} x2={pad.left + iw} y2={pad.top + ih} stroke="#cbd5e1" strokeWidth={1.5} />
+    </svg>
+  );
+}
+
 function DataVizBlock({
   chartType, title, data, config,
 }: {
@@ -1083,21 +1157,7 @@ function DataVizBlock({
   } else if (chartType === 'pie') {
     chart = <PieChart data={data} size={Math.min(w, h)} />;
   } else {
-    // scatter — simple dot plot
-    chart = (
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', maxWidth: w, display: 'block' }}>
-        <text x={w / 2} y={h / 2} textAnchor="middle" fontSize={11} fill="#94a3b8">
-          scatter ({data.length} pts)
-        </text>
-        {data.map((d, i) => {
-          const maxX = Math.max(...data.map(p => Number(p.x)), 1);
-          const maxY = Math.max(...data.map(p => p.y), 1);
-          const cx = 32 + (Number(d.x) / maxX) * (w - 48);
-          const cy = 16 + (1 - d.y / maxY) * (h - 48);
-          return <circle key={i} cx={cx} cy={cy} r={4} fill={CHART_COLORS[i % CHART_COLORS.length]} opacity={0.8} />;
-        })}
-      </svg>
-    );
+    chart = <ScatterChart data={data} width={w} height={h} />;
   }
 
   return (
