@@ -11,6 +11,8 @@ export * from './schemas/kanban';
 export * from './schemas/calendar';
 export * from './schemas/tree';
 export * from './schemas/chat';
+export * from './schemas/snapshot';
+export * from './schemas/presence';
 
 // Compiler
 export * from './compiler/registry';

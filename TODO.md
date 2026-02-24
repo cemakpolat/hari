@@ -116,10 +116,10 @@
 - [x] Error recovery patterns (ErrorRecoveryTracker)
 
 ### Performance
-- [ ] Streaming JSON parser integration for progressive rendering
-- [ ] Large form performance optimization (virtualization)
-- [ ] Document lazy loading for long reports
-- [ ] Bundle size optimization
+- [x] Streaming JSON parser integration for progressive rendering (NdjsonStreamParser in streaming.ts; feed() chunks, receive updates via onValue callbacks)
+- [x] Large form performance optimization (virtualization — VirtualFieldList + useIntersectionMount; lazy-mounts off-screen fields via IntersectionObserver; activates for sections with > 15 fields; first 5 fields always eager; jsdom/SSR fallback mounts all immediately)
+- [x] Document lazy loading for long reports (LazySectionLoader in DocumentRenderer; activates when doc has > 5 sections; first 3 sections always eager; shimmer placeholder preserves layout height; mount-once semantics)
+- [x] Bundle size optimization (sideEffects:false in both packages; splitting:true + minify:true in tsup configs; NODE_ENV inlining for dead-code elimination; bundle:analyze script; 18 new performance tests)
 
 ### Real Integrations
 - [ ] MCP server integration examples (2–3 connectors)
@@ -163,9 +163,9 @@
 - [ ] Voice input for forms
 - [ ] Collaborative editing for documents
 - [ ] Offline mode with sync
-- [ ] Real-time collaboration indicators
-- [ ] Version control for intent payloads
-- [ ] Undo/redo for intent modifications
+- [x] Real-time collaboration indicators *(done — Collaborator schema with displayName/color/focusedDataKey/currentAction; addCollaborator/removeCollaborator/updateCollaboratorFocus/getCollaborators actions; session-level persistence; 22 unit tests; collaborators panel in demo UI)*
+- [x] Version control for intent payloads *(done — snapshots with diff tracking; export/import JSON; create/restore/delete; 18 unit tests; snapshot UI panel in demo)*
+- [x] Undo/redo for intent modifications *(done — `redoStack` in IntentStore; ⌘Z / ⌘⇧Z shortcuts + toolbar buttons in demo; 14 unit tests)*
 
 ### AI/ML Integration
 - [ ] Intent prediction based on context
@@ -224,4 +224,4 @@ Track user-requested features here:
 
 ---
 
-*Last updated: 2026-02-24 (v0.4.0 — Hypothetical Mode state branching + HypotheticalCompare; Storybook integration (8 stories); IntentPayloadBuilder; TypeScript strict mode hardening; all scenario explainability fields migrated to ExplainabilityContext schema; 594 tests passing: 398 core / 196 ui)*
+*Last updated: 2026-02-24 (v0.5.2 — Undo/redo (14 tests) + Version control snapshots (18 tests) + Real-time presence indicators (22 tests); All Advanced Features UIs in demo with save/restore/add collaborator controls; 520 core tests passing)*

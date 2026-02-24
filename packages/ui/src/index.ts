@@ -60,6 +60,11 @@ export type { ChatRendererProps } from './components/ChatRenderer';
 export { useAgentBridge } from './hooks/useAgentBridge';
 export type { UseAgentBridgeResult } from './hooks/useAgentBridge';
 
+// Performance utilities
+export { useIntersectionMount } from './hooks/useIntersectionMount';
+export type { UseIntersectionMountOptions, UseIntersectionMountResult } from './hooks/useIntersectionMount';
+export { VirtualFieldList, VIRTUALIZE_THRESHOLD } from './components/VirtualFieldList';
+
 // Utilities — color contrast (WCAG 2.2 AA compliance)
 export {
   hexToRgb,

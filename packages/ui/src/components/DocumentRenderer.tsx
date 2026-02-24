@@ -20,6 +20,22 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { DocumentDataSchema } from '@hari/core';
 import type { DocumentBlock, DocumentSection, DocumentData } from '@hari/core';
 
+// ── Shimmer keyframe (injected once at module init) ─────────────────────────────────
+
+let _shimmerInjected = false;
+function ensureShimmerStyle() {
+  if (_shimmerInjected || typeof document === 'undefined') return;
+  _shimmerInjected = true;
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes hari-shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 // ── Block error boundary ───────────────────────────────────────────────────────
 
 interface BlockErrorBoundaryState { hasError: boolean; message: string }
@@ -1317,6 +1333,67 @@ function SectionBlock({
   );
 }
 
+// ── Lazy section loading ───────────────────────────────────────────────────────
+
+/** Activate lazy section loading when the document has more than this many sections. */
+const LAZY_SECTIONS_THRESHOLD = 5;
+
+/** Number of sections always rendered immediately (above-the-fold content). */
+const EAGER_SECTIONS = 3;
+
+function LazySectionLoader({
+  eager,
+  children,
+  estimatedHeight = 120,
+}: {
+  eager: boolean;
+  children: React.ReactNode;
+  estimatedHeight?: number;
+}) {
+  const sentinelRef = React.useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = React.useState(eager);
+
+  React.useEffect(() => {
+    ensureShimmerStyle();
+    if (eager || mounted) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setMounted(true);
+      return;
+    }
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setMounted(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '500px', threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eager, mounted]);
+
+  if (mounted) return <>{children}</>;
+
+  return (
+    <div
+      ref={sentinelRef}
+      aria-hidden="true"
+      style={{
+        minHeight: estimatedHeight,
+        marginBottom: '1rem',
+        borderRadius: '0.5rem',
+        background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)',
+        backgroundSize: '200% 100%',
+        animation: 'hari-shimmer 1.4s infinite',
+      }}
+    />
+  );
+}
+
 // ── Top-level component ───────────────────────────────────────────────────────
 
 export function DocumentRenderer({
@@ -1518,16 +1595,22 @@ export function DocumentRenderer({
         </div>
       )}
 
-      {/* Sections */}
-      {visibleSections.map((section) => (
-        <SectionBlock
-          key={section.id}
-          section={section}
-          showConfidence={showConfidence}
-          onExplain={onExplain}
-          density={density}
-        />
-      ))}
+      {/* Sections — lazily mounted for long documents */}
+      {visibleSections.map((section, index) => {
+        const useLazy = visibleSections.length > LAZY_SECTIONS_THRESHOLD;
+        const eager = !useLazy || index < EAGER_SECTIONS;
+        const estimatedHeight = Math.max(80, section.blocks.length * 40);
+        return (
+          <LazySectionLoader key={section.id} eager={eager} estimatedHeight={estimatedHeight}>
+            <SectionBlock
+              section={section}
+              showConfidence={showConfidence}
+              onExplain={onExplain}
+              density={density}
+            />
+          </LazySectionLoader>
+        );
+      })}
 
       {/* Document footer: sources */}
       {doc.sources && doc.sources.length > 0 && (

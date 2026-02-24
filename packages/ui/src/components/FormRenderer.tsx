@@ -19,6 +19,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { FormField, FormSection, FormStep, ValidationRule, DateRangeValue } from '@hari/core';
+import { VirtualFieldList, VIRTUALIZE_THRESHOLD } from './VirtualFieldList';
 
 // ── Public props ──────────────────────────────────────────────────────────────
 
@@ -705,29 +706,59 @@ function FormSectionRenderer({
       )}
 
       {(!section.collapsible || !collapsed) && (
-        <div
-          style={
+        (() => {
+          const gridCols =
             section.columns && section.columns > 1
-              ? {
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${section.columns}, 1fr)`,
-                  gap: '1rem',
-                }
-              : { display: 'flex', flexDirection: 'column', gap: '1rem' }
+              ? `repeat(${section.columns}, 1fr)`
+              : undefined;
+
+          // For sections with many fields, lazily mount off-screen fields via
+          // IntersectionObserver to avoid mounting hundreds of DOM nodes upfront.
+          const useVirtual = visibleFields.length > VIRTUALIZE_THRESHOLD;
+
+          if (useVirtual) {
+            return (
+              <VirtualFieldList
+                items={visibleFields}
+                gap="1rem"
+                gridTemplateColumns={gridCols}
+                renderItem={(field) => (
+                  <FieldRenderer
+                    key={field.id}
+                    field={field}
+                    value={values[field.id]}
+                    error={touched[field.id] ? errors[field.id] : undefined}
+                    isValidating={!!validating[field.id]}
+                    onChange={(value) => onFieldChange(field.id, value, field)}
+                    onBlur={() => onFieldBlur(field.id, field)}
+                  />
+                )}
+              />
+            );
           }
-        >
-          {visibleFields.map((field) => (
-            <FieldRenderer
-              key={field.id}
-              field={field}
-              value={values[field.id]}
-              error={touched[field.id] ? errors[field.id] : undefined}
-              isValidating={!!validating[field.id]}
-              onChange={(value) => onFieldChange(field.id, value, field)}
-              onBlur={() => onFieldBlur(field.id, field)}
-            />
-          ))}
-        </div>
+
+          return (
+            <div
+              style={
+                gridCols
+                  ? { display: 'grid', gridTemplateColumns: gridCols, gap: '1rem' }
+                  : { display: 'flex', flexDirection: 'column', gap: '1rem' }
+              }
+            >
+              {visibleFields.map((field) => (
+                <FieldRenderer
+                  key={field.id}
+                  field={field}
+                  value={values[field.id]}
+                  error={touched[field.id] ? errors[field.id] : undefined}
+                  isValidating={!!validating[field.id]}
+                  onChange={(value) => onFieldChange(field.id, value, field)}
+                  onBlur={() => onFieldBlur(field.id, field)}
+                />
+              ))}
+            </div>
+          );
+        })()
       )}
     </div>
   );

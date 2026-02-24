@@ -11,6 +11,7 @@ import {
   SSEAgentBridge,
   MCPAgentBridge,
   telemetry,
+  createCollaborator,
 } from '@hari/core';
 import type { IntentPayloadInput, AgentBridge } from '@hari/core';
 import {
@@ -157,6 +158,11 @@ export function App() {
   const [versionWarning, setVersionWarning] = React.useState<string | null>(null);
   const [isLive, setIsLive] = React.useState(false);
   const [transportType, setTransportType] = React.useState<TransportType>(getDefaultTransport());
+  const [snapshotLabel, setSnapshotLabel] = React.useState('');
+  const [showSnapshotPanel, setShowSnapshotPanel] = React.useState(false);
+  const [showCollaboratorsPanel, setShowCollaboratorsPanel] = React.useState(false);
+  const [testCollaboratorName, setTestCollaboratorName] = React.useState('');
+
 
   const {
     currentIntent,
@@ -164,6 +170,20 @@ export function App() {
     modifyParameter,
     hypotheticalIntent,
     branchHypothetical,
+    intentHistory,
+    redoStack,
+    undo,
+    redo,
+    snapshots,
+    createSnapshot,
+    restoreSnapshot,
+    deleteSnapshot,
+    exportSnapshots,
+    collaborators,
+    addCollaborator,
+    removeCollaborator,
+    updateCollaboratorFocus,
+    getCollaborators,
   } = useIntentStore();
   const { densityOverride, setHypotheticalMode } = useUIStore();
 
@@ -549,6 +569,254 @@ export function App() {
                   </div>
                 ))
               )}
+            </div>
+          </Panel>
+
+          {/* Snapshots (version control) */}
+          <Panel title="Snapshots (v0.5.1)">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="text"
+                  placeholder="Name this snapshot…"
+                  value={snapshotLabel}
+                  onChange={(e) => setSnapshotLabel(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && snapshotLabel.trim()) {
+                      createSnapshot(snapshotLabel);
+                      setSnapshotLabel('');
+                      addLog(`[snapshot] Created: "${snapshotLabel}"`);
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.375rem 0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '0.73rem',
+                    fontFamily: 'monospace',
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    if (snapshotLabel.trim()) {
+                      createSnapshot(snapshotLabel);
+                      addLog(`[snapshot] Created: "${snapshotLabel}"`);
+                      setSnapshotLabel('');
+                    }
+                  }}
+                  style={{
+                    padding: '0.375rem 0.625rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #9f7aea',
+                    backgroundColor: '#f5f3ff',
+                    color: '#6b21a8',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    const json = exportSnapshots();
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `snapshots-${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    addLog('[snapshot] Exported JSON');
+                  }}
+                  style={{
+                    padding: '0.375rem 0.625rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #9f7aea',
+                    backgroundColor: '#f5f3ff',
+                    color: '#6b21a8',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Export
+                </button>
+              </div>
+              <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                {Object.values(snapshots).length === 0 ? (
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>No snapshots yet</span>
+                ) : (
+                  Object.values(snapshots)
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .map((snapshot) => (
+                      <div
+                        key={snapshot.snapshotId}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '0.375rem 0.5rem',
+                          backgroundColor: '#f8f5ff',
+                          borderRadius: '0.375rem',
+                          border: '1px solid #e9d5ff',
+                          fontSize: '0.68rem',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#6b21a8' }}>{snapshot.label}</div>
+                          <div style={{ color: '#a78bfa', fontSize: '0.65rem' }}>
+                            {new Date(snapshot.createdAt).toLocaleTimeString()} ({snapshot.changedKeys.length} changes)
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <button
+                            onClick={() => {
+                              restoreSnapshot(snapshot.snapshotId);
+                              addLog(`[snapshot] Restored: "${snapshot.label}"`);
+                            }}
+                            style={{
+                              padding: '0.25rem 0.375rem',
+                              fontSize: '0.65rem',
+                              borderRadius: '0.25rem',
+                              border: '1px solid #c4b5fd',
+                              backgroundColor: 'transparent',
+                              color: '#7c3aed',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ↩ Restore
+                          </button>
+                          <button
+                            onClick={() => {
+                              deleteSnapshot(snapshot.snapshotId);
+                              addLog(`[snapshot] Deleted: "${snapshot.label}"`);
+                            }}
+                            style={{
+                              padding: '0.25rem 0.375rem',
+                              fontSize: '0.65rem',
+                              borderRadius: '0.25rem',
+                              border: '1px solid #fca5a5',
+                              backgroundColor: 'transparent',
+                              color: '#dc2626',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ✕ Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
+          </Panel>
+
+          {/* Collaborators (real-time presence) */}
+          <Panel title="Collaborators (v0.5.2)">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="text"
+                  placeholder="Add test collaborator…"
+                  value={testCollaboratorName}
+                  onChange={(e) => setTestCollaboratorName(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && testCollaboratorName.trim()) {
+                      const collab = createCollaborator(testCollaboratorName);
+                      addCollaborator(collab);
+                      addLog(`[presence] Added: "${testCollaboratorName}"`);
+                      setTestCollaboratorName('');
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.375rem 0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '0.73rem',
+                    fontFamily: 'monospace',
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    if (testCollaboratorName.trim()) {
+                      const collab = createCollaborator(testCollaboratorName);
+                      addCollaborator(collab);
+                      addLog(`[presence] Added: "${testCollaboratorName}"`);
+                      setTestCollaboratorName('');
+                    }
+                  }}
+                  style={{
+                    padding: '0.375rem 0.625rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #a78bfa',
+                    backgroundColor: '#f5f3ff',
+                    color: '#6b21a8',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+              <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                {getCollaborators().length === 0 ? (
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>No collaborators</span>
+                ) : (
+                  getCollaborators().map((collab) => (
+                    <div
+                      key={collab.collaboratorId}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.375rem 0.5rem',
+                        backgroundColor: '#f8f5ff',
+                        borderRadius: '0.375rem',
+                        border: `2px solid ${collab.color}`,
+                        fontSize: '0.68rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div
+                          style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '2px',
+                            backgroundColor: collab.color,
+                          }}
+                        />
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#6b21a8' }}>{collab.displayName}</div>
+                          <div style={{ color: '#a78bfa', fontSize: '0.65rem' }}>
+                            {collab.focusedDataKey ? `on ${collab.focusedDataKey}` : 'no focus'} · {collab.currentAction || 'viewing'}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          removeCollaborator(collab.collaboratorId);
+                          addLog(`[presence] Removed: "${collab.displayName}"`);
+                        }}
+                        style={{
+                          padding: '0.25rem 0.375rem',
+                          fontSize: '0.65rem',
+                          borderRadius: '0.25rem',
+                          border: '1px solid #fca5a5',
+                          backgroundColor: 'transparent',
+                          color: '#dc2626',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </Panel>
 
