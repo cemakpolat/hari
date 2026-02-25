@@ -73,6 +73,19 @@ const DividerBlockSchema = z.object({
   type: z.literal('divider'),
 });
 
+const TableRowActionSchema = z.object({
+  /** Human-readable button label */
+  label: z.string().min(1),
+  /** Opaque action identifier passed to onRowAction callback */
+  action: z.string().min(1),
+  /** Visual variant controls button color */
+  variant: z.enum(['default', 'danger', 'primary']).default('default'),
+  /** Optional emoji/text icon shown before label */
+  icon: z.string().optional(),
+});
+
+export type TableRowAction = z.infer<typeof TableRowActionSchema>;
+
 const TableBlockSchema = z.object({
   type: z.literal('table'),
   /** Table headers with optional alignment */
@@ -84,6 +97,11 @@ const TableBlockSchema = z.object({
   /** Array of row objects, keys must match header keys */
   rows: z.array(z.record(z.string(), z.unknown())),
   caption: z.string().optional(),
+  /**
+   * Per-row action buttons. When provided, an extra column is appended to each
+   * row with buttons for each action. Clicks fire onRowAction in the renderer.
+   */
+  rowActions: z.array(TableRowActionSchema).optional(),
 });
 
 const ImageBlockSchema = z.object({

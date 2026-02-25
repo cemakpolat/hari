@@ -22,6 +22,40 @@ import type { FormField, FormSection, FormStep, ValidationRule, DateRangeValue }
 import { VirtualFieldList, VIRTUALIZE_THRESHOLD } from './VirtualFieldList';
 import { VoiceMicButton } from './VoiceMicButton';
 
+// ── Dark mode ─────────────────────────────────────────────────────────────────
+
+function usePrefersDark(): boolean {
+  const mq = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
+  const [dark, setDark] = useState(mq?.matches ?? false);
+  useEffect(() => {
+    if (!mq) return;
+    const handler = (e: MediaQueryListEvent) => setDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [mq]);
+  return dark;
+}
+
+function useFormPalette() {
+  const dark = usePrefersDark();
+  return {
+    dark,
+    bg:            dark ? '#0f172a' : '#ffffff',
+    bgSubtle:      dark ? '#1e293b' : '#f8fafc',
+    bgDisabled:    dark ? '#0f172a' : '#f1f5f9',
+    border:        dark ? '#334155' : '#e2e8f0',
+    borderStrong:  dark ? '#475569' : '#cbd5e1',
+    borderFocus:   dark ? '#6366f1' : '#6366f1',
+    textPrimary:   dark ? '#f1f5f9' : '#1e293b',
+    textLabel:     dark ? '#cbd5e1' : '#334155',
+    textSecondary: dark ? '#94a3b8' : '#64748b',
+    textMuted:     dark ? '#64748b' : '#94a3b8',
+    textDisabled:  dark ? '#475569' : '#94a3b8',
+  } as const;
+}
+
 // ── Public props ──────────────────────────────────────────────────────────────
 
 export interface FormRendererProps {
@@ -161,6 +195,7 @@ export function FormRenderer({
   steps,
   autoSave = false,
 }: FormRendererProps) {
+  const p = useFormPalette();
   const [values, setValues] = useState<Record<string, unknown>>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>(serverErrors?.fieldErrors ?? {});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -386,17 +421,17 @@ export function FormRenderer({
   }, [draftKey]);
 
   return (
-    <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+    <form onSubmit={handleSubmit} style={{ width: '100%', color: p.textPrimary }}>
       {/* Restore draft banner */}
       {showRestoreBanner && (
         <div role="alert" style={{
           marginBottom: '1rem',
           padding: '0.625rem 0.875rem',
-          backgroundColor: '#eff6ff',
-          border: '1px solid #93c5fd',
+          backgroundColor: p.dark ? '#1e3a5f' : '#eff6ff',
+          border: `1px solid ${p.dark ? '#3b82f6' : '#93c5fd'}`,
           borderRadius: '0.375rem',
           fontSize: '0.8rem',
-          color: '#1d4ed8',
+          color: p.dark ? '#93c5fd' : '#1d4ed8',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -410,7 +445,7 @@ export function FormRenderer({
               aria-label="Restore saved draft"
               style={{
                 padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 600,
-                backgroundColor: '#1d4ed8', color: 'white',
+                backgroundColor: '#4f46e5', color: 'white',
                 border: 'none', borderRadius: '0.375rem', cursor: 'pointer',
               }}
             >
@@ -422,8 +457,8 @@ export function FormRenderer({
               aria-label="Discard saved draft"
               style={{
                 padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 600,
-                backgroundColor: 'white', color: '#475569',
-                border: '1px solid #cbd5e1', borderRadius: '0.375rem', cursor: 'pointer',
+                backgroundColor: p.bgSubtle, color: p.textSecondary,
+                border: `1px solid ${p.borderStrong}`, borderRadius: '0.375rem', cursor: 'pointer',
               }}
             >
               Discard
@@ -452,17 +487,17 @@ export function FormRenderer({
       ))}
 
       {/* Footer: wizard nav or normal submit */}
-      <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: `1px solid ${p.border}` }}>
         {/* Server-level global error */}
         {serverErrors?.globalError && (
           <div role="alert" style={{
             marginBottom: '0.75rem',
             padding: '0.625rem 0.875rem',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fca5a5',
+            backgroundColor: p.dark ? '#3b1114' : '#fef2f2',
+            border: `1px solid ${p.dark ? '#ef4444' : '#fca5a5'}`,
             borderRadius: '0.375rem',
             fontSize: '0.8rem',
-            color: '#991b1b',
+            color: p.dark ? '#fca5a5' : '#991b1b',
           }}>
             {serverErrors.globalError}
           </div>
@@ -473,11 +508,11 @@ export function FormRenderer({
           <div role="alert" style={{
             marginBottom: '0.75rem',
             padding: '0.625rem 0.875rem',
-            backgroundColor: '#fffbeb',
-            border: '1px solid #fcd34d',
+            backgroundColor: p.dark ? '#3b2600' : '#fffbeb',
+            border: `1px solid ${p.dark ? '#f59e0b' : '#fcd34d'}`,
             borderRadius: '0.375rem',
             fontSize: '0.8rem',
-            color: '#92400e',
+            color: p.dark ? '#fcd34d' : '#92400e',
           }}>
             {rateLimitError}
           </div>
@@ -492,9 +527,9 @@ export function FormRenderer({
                 aria-label="Go to previous step"
                 style={{
                   padding: '0.625rem 1.25rem',
-                  backgroundColor: 'white',
-                  color: '#475569',
-                  border: '1px solid #cbd5e1',
+                  backgroundColor: p.bgSubtle,
+                  color: p.textSecondary,
+                  border: `1px solid ${p.borderStrong}`,
                   borderRadius: '0.5rem',
                   fontSize: '0.875rem',
                   fontWeight: 600,
@@ -529,7 +564,7 @@ export function FormRenderer({
                 disabled={isSubmitting || !!rateLimitError}
                 style={{
                   padding: '0.625rem 1.5rem',
-                  backgroundColor: isSubmitting || rateLimitError ? '#94a3b8' : '#4f46e5',
+                  backgroundColor: isSubmitting || rateLimitError ? p.textMuted : '#4f46e5',
                   color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
@@ -541,7 +576,7 @@ export function FormRenderer({
                 {isSubmitting ? 'Submitting...' : submitButtonLabel}
               </button>
             )}
-            <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: 'auto' }}>
+            <span style={{ fontSize: '0.7rem', color: p.textMuted, marginLeft: 'auto' }}>
               Step {currentStepIndex + 1} of {steps!.length}
             </span>
           </div>
@@ -551,7 +586,7 @@ export function FormRenderer({
             disabled={isSubmitting || !!rateLimitError}
             style={{
               padding: '0.625rem 1.5rem',
-              backgroundColor: isSubmitting || rateLimitError ? '#94a3b8' : '#4f46e5',
+              backgroundColor: isSubmitting || rateLimitError ? p.textMuted : '#4f46e5',
               color: 'white',
               border: 'none',
               borderRadius: '0.5rem',
@@ -578,6 +613,7 @@ function WizardStepIndicator({
   steps: FormStep[];
   currentIndex: number;
 }) {
+  const p = useFormPalette();
   return (
     <nav aria-label="Form steps" style={{ marginBottom: '1.5rem' }}>
       <ol style={{
@@ -597,9 +633,9 @@ function WizardStepIndicator({
                 <div style={{
                   width: '2rem', height: '2rem',
                   borderRadius: '50%',
-                  border: `2px solid ${active ? '#4f46e5' : done ? '#4f46e5' : '#cbd5e1'}`,
-                  backgroundColor: done ? '#4f46e5' : active ? '#eff6ff' : 'white',
-                  color: done ? 'white' : active ? '#4f46e5' : '#94a3b8',
+                  border: `2px solid ${active || done ? '#4f46e5' : p.borderStrong}`,
+                  backgroundColor: done ? '#4f46e5' : active ? (p.dark ? '#1e1b4b' : '#eff6ff') : p.bg,
+                  color: done ? 'white' : active ? '#6366f1' : p.textMuted,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.75rem', fontWeight: 700,
                   transition: 'all 0.2s',
@@ -610,7 +646,7 @@ function WizardStepIndicator({
                   marginTop: '0.3rem',
                   fontSize: '0.65rem',
                   fontWeight: active ? 700 : 400,
-                  color: active ? '#4f46e5' : done ? '#475569' : '#94a3b8',
+                  color: active ? '#6366f1' : done ? p.textSecondary : p.textMuted,
                   whiteSpace: 'nowrap',
                   maxWidth: '6rem',
                   textAlign: 'center',
@@ -625,7 +661,7 @@ function WizardStepIndicator({
                   flex: '1 1 auto',
                   height: '2px',
                   marginBottom: '1.2rem',
-                  backgroundColor: i < currentIndex ? '#4f46e5' : '#e2e8f0',
+                  backgroundColor: i < currentIndex ? '#4f46e5' : p.border,
                   transition: 'background-color 0.3s',
                   minWidth: '1rem',
                 }} aria-hidden="true" />
@@ -661,6 +697,7 @@ function FormSectionRenderer({
   onFieldBlur,
   isFieldVisible,
 }: FormSectionRendererProps) {
+  const p = useFormPalette();
   const [collapsed, setCollapsed] = useState(section.defaultCollapsed);
 
   const visibleFields = section.fields.filter(isFieldVisible);
@@ -674,11 +711,11 @@ function FormSectionRenderer({
           style={{
             marginBottom: '1rem',
             paddingBottom: '0.5rem',
-            borderBottom: '2px solid #e2e8f0',
+            borderBottom: `2px solid ${p.border}`,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#1e293b' }}>
+            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: p.textPrimary }}>
               {section.title}
             </h3>
             {section.collapsible && (
@@ -699,7 +736,7 @@ function FormSectionRenderer({
             )}
           </div>
           {section.description && (
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: p.textSecondary }}>
               {section.description}
             </p>
           )}
@@ -777,6 +814,7 @@ interface FieldRendererProps {
 }
 
 function FieldRenderer({ field, value, error, isValidating, onChange, onBlur }: FieldRendererProps) {
+  const p = useFormPalette();
   const fieldId = `field-${field.id}`;
   const hasError = !!error;
 
@@ -784,10 +822,10 @@ function FieldRenderer({ field, value, error, isValidating, onChange, onBlur }: 
     width: '100%',
     padding: '0.5rem 0.75rem',
     fontSize: '0.875rem',
-    border: `1px solid ${hasError ? '#ef4444' : '#cbd5e1'}`,
+    border: `1px solid ${hasError ? '#ef4444' : p.borderStrong}`,
     borderRadius: '0.375rem',
-    backgroundColor: field.disabled ? '#f1f5f9' : 'white',
-    color: '#1e293b',
+    backgroundColor: field.disabled ? p.bgDisabled : p.bg,
+    color: field.disabled ? p.textDisabled : p.textPrimary,
     outline: 'none',
     transition: 'border-color 0.2s',
   };
@@ -798,7 +836,7 @@ function FieldRenderer({ field, value, error, isValidating, onChange, onBlur }: 
   return (
     <div>
       <label htmlFor={fieldId} style={{ display: 'block', marginBottom: '0.375rem' }}>
-        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>
+        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: p.textLabel }}>
           {field.label}
           {field.required && <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>}
           {field.sensitive && (
@@ -818,7 +856,7 @@ function FieldRenderer({ field, value, error, isValidating, onChange, onBlur }: 
       </label>
 
       {field.description && (
-        <p style={{ margin: '0 0 0.375rem', fontSize: '0.75rem', color: '#64748b' }}>
+        <p style={{ margin: '0 0 0.375rem', fontSize: '0.75rem', color: p.textSecondary }}>
           {field.description}
         </p>
       )}
@@ -826,7 +864,7 @@ function FieldRenderer({ field, value, error, isValidating, onChange, onBlur }: 
       {renderFieldInput(field, value, onChange, onBlur, fieldId, commonInputStyles)}
 
       {field.helpText && !hasError && !isValidating && (
-        <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem', color: '#94a3b8' }}>
+        <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem', color: p.textMuted }}>
           {field.helpText}
         </p>
       )}
