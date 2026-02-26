@@ -75,8 +75,8 @@ describe('BaseFieldSchema', () => {
     const result = BaseFieldSchema.parse(MIN);
     expect(result.required).toBe(false);
     expect(result.disabled).toBe(false);
-    expect(result.sensitive).toBe(false);
-    expect(result.validation).toEqual([]);
+    expect(result.sensitive).toBeUndefined();
+    expect(result.validation).toBeUndefined();
   });
 
   it('accepts optional fields', () => {
@@ -113,7 +113,7 @@ describe('TextInputFieldSchema', () => {
   it('parses a minimal text field', () => {
     const result = TextInputFieldSchema.parse(BASE);
     expect(result.type).toBe('text');
-    expect(result.multiline).toBe(false);
+    expect(result.multiline).toBeUndefined();
   });
 
   it('parses a multiline text field', () => {

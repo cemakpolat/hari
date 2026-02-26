@@ -172,6 +172,7 @@ export function App() {
   const [showSnapshotPanel, setShowSnapshotPanel] = React.useState(false);
   const [showCollaboratorsPanel, setShowCollaboratorsPanel] = React.useState(false);
   const [testCollaboratorName, setTestCollaboratorName] = React.useState('');
+  const importInputRef = React.useRef<HTMLInputElement>(null);
 
 
   const {
@@ -326,6 +327,44 @@ export function App() {
     addLog('[user] Dismissed hypothetical overlay');
   }, [addLog, setHypotheticalMode]);
 
+  // ── Export / Import scenario JSON ─────────────────────────────────────────
+  const handleExportScenario = React.useCallback(() => {
+    if (!currentIntent) return;
+    const json = JSON.stringify(currentIntent, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hari-scenario-${currentIntent.domain}-${currentIntent.type}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addLog(`[user] Exported scenario as JSON (${(json.length / 1024).toFixed(1)} KB)`);
+  }, [currentIntent, addLog]);
+
+  const handleImportScenario = React.useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const raw = JSON.parse(e.target?.result as string);
+        const parsed = IntentPayloadSchema.parse(raw);
+        const store = useIntentStore.getState();
+        store.setIntent(parsed);
+        setActiveScenario('__imported__');
+        addLog(`[user] Imported scenario: ${parsed.intentId.slice(0, 8)}… domain=${parsed.domain} type=${parsed.type}`);
+      } catch (err) {
+        addLog(`[error] Import failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    };
+    reader.readAsText(file);
+  }, [addLog]);
+
+  const handleImportFileChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImportScenario(file);
+    // Reset input so the same file can be imported again
+    if (importInputRef.current) importInputRef.current.value = '';
+  }, [handleImportScenario]);
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
@@ -388,6 +427,44 @@ export function App() {
                 {emoji} {label}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Export / Import buttons — shown in demo view */}
+        {activeView === 'demo' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', borderLeft: '1px solid #334155', paddingLeft: '0.75rem' }}>
+            <button
+              onClick={handleExportScenario}
+              disabled={!currentIntent}
+              title="Export current scenario as JSON"
+              style={{
+                padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
+                border: '1px solid #334155', backgroundColor: '#1e293b',
+                color: currentIntent ? '#e2e8f0' : '#475569',
+                fontSize: '0.75rem', fontWeight: 600, cursor: currentIntent ? 'pointer' : 'not-allowed',
+              }}
+            >
+              ↓ Export JSON
+            </button>
+            <button
+              onClick={() => importInputRef.current?.click()}
+              title="Import a scenario from a JSON file"
+              style={{
+                padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
+                border: '1px solid #334155', backgroundColor: '#1e293b',
+                color: '#e2e8f0', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              ↑ Import JSON
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={handleImportFileChange}
+              style={{ display: 'none' }}
+              aria-label="Import scenario JSON file"
+            />
           </div>
         )}
 

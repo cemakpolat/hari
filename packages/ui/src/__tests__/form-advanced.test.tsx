@@ -15,7 +15,7 @@ import {
   render, screen, fireEvent, waitFor, act,
 } from '@testing-library/react';
 import { FormRenderer } from '../components/FormRenderer';
-import type { FormSection } from '@hari/core';
+import type { FormSection, FormField } from '@hari/core';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,6 +30,8 @@ function makeSection(fields: FormSection['fields']): FormSection {
   };
 }
 
+// Cast via unknown to avoid requiring every Zod-default field in a literal object.
+// Runtime behaviour is identical since FormRenderer handles missing optional fields.
 const TEXT_FIELD = {
   id: 'username',
   type: 'text' as const,
@@ -37,7 +39,10 @@ const TEXT_FIELD = {
   required: false,
   disabled: false,
   inputType: 'text' as const,
-};
+  validation: [],
+  sensitive: false,
+  multiline: false,
+} as unknown as FormField;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Async validators
@@ -324,7 +329,9 @@ describe('FormRenderer — HiddenField', () => {
     required: false,
     disabled: false,
     defaultValue: 'abc123',
-  };
+    validation: [],
+    sensitive: false,
+  } as unknown as FormField;
 
   it('does not render any visible UI for hidden fields', () => {
     render(

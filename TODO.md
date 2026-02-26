@@ -79,7 +79,7 @@
 - [x] File upload preview and progress (done — `showPreview` + `URL.createObjectURL`)
 - [x] Multi-step forms with wizard navigation (done — `WizardStepIndicator`)
 - [x] Form auto-save and recovery (done — localStorage draft restore)
-- [ ] Rich text editor field type
+- [x] Rich text editor field type (done — `RichTextFieldSchema` with toolbar/rows/minLength/maxLength; markdown toolbar with bold/italic/underline/link/lists)
 - [x] Date range picker (done — `date_range` field type)
 - [x] Color picker field (done — native `<input type="color">`)
 - [x] Autocomplete/typeahead fields with async data (done — `autocomplete` field type)
@@ -200,13 +200,13 @@ Track these metrics to measure HARI effectiveness:
 
 ## 🐛 Known Issues / Tech Debt
 
-- [ ] FormRenderer doesn't handle async validation yet
+- [x] FormRenderer doesn't handle async validation yet (done — `onValidate` async prop + `asyncValidating` state + per-field error display)
 - [ ] DocumentRenderer dataviz is placeholder (needs library)
-- [ ] Image block doesn't support expandable/lightbox mode
-- [ ] Table block doesn't support row actions
-- [ ] No responsive breakpoints defined for density modes
-- [ ] Missing error boundaries for individual block types
-- [ ] Form sections don't support nested sections
+- [x] Image block doesn't support expandable/lightbox mode (done — `expandable` flag + lightbox overlay with click-to-close)
+- [x] Table block doesn't support row actions (done — `rowActions` array with onClick callbacks)
+- [x] No responsive breakpoints defined for density modes (done — `useNarrowLayout` hook collapses multi-column grids below 640px)
+- [x] Missing error boundaries for individual block types (done — `FieldErrorBoundary` class component wraps each field in FormRenderer; `BlockErrorBoundary` already in DocumentRenderer)
+- [x] Form sections don't support nested sections (done — `FormSectionSchema` uses `z.lazy()` for recursive type; `subsections?: FormSection[]` with indented rendering)
 - [ ] No built-in rate limiting for form submissions
 
 ---
@@ -214,14 +214,14 @@ Track these metrics to measure HARI effectiveness:
 ## 💡 Community Requests
 
 Track user-requested features here:
-- [ ] Dark mode support for all components
-- [ ] Custom theme configuration
+- [x] Dark mode support for all components (done — `prefers-color-scheme` aware palettes throughout)
+- [x] Custom theme configuration (done — `FormTheme` interface + `FormThemeContext`; pass `theme` prop to FormRenderer)
 - [ ] Localization/i18n support
 - [ ] Right-to-left (RTL) language support
-- [ ] Export scenarios to JSON
-- [ ] Import scenarios from JSON
-- [ ] Component CSS variables for easy customization
+- [x] Export scenarios to JSON (done — Export button in demo header downloads current intent as `.json` file)
+- [x] Import scenarios from JSON (done — Import button in demo header reads `.json` file, validates with Zod, loads as custom scenario)
+- [x] Component CSS variables for easy customization (done — `FormTheme` prop with accentColor/dangerColor/backgroundColor/surfaceColor/textColor/borderColor/radius overrides)
 
 ---
 
-*Last updated: 2026-02-24 (v0.5.3 — Voice input for forms (useVoiceInput hook + VoiceFieldSchema + VoiceMicButton; 25 tests) + Collaborative editing for documents (useDocumentCollaboration hook + CollaborativeDocumentEditor + OT-lite Lamport clock; 30+ tests); localStorage mock in test setup fixing 2 pre-existing a11y test failures; 520 core tests passing, 309 UI tests passing)*
+*Last updated: 2026-02-26 (v0.5.4 — Rich text editor field type (RichTextFieldSchema + toolbar); FieldErrorBoundary wrapping each FormRenderer field; nested FormSection subsections via z.lazy() recursive schema; useNarrowLayout responsive hook collapsing multi-column grids below 640px; FormTheme context for custom color/radius overrides; Export/Import scenario JSON in demo app; matchMedia mock in test setup; 520 core tests + 505 UI tests all passing)*

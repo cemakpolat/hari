@@ -37,12 +37,12 @@ export const BaseFieldSchema = z.object({
   placeholder: z.string().optional(),
   required: z.boolean().default(false),
   disabled: z.boolean().default(false),
-  /** Validation rules */
-  validation: z.array(ValidationRuleSchema).default([]),
+  /** Validation rules — omit or pass [] when no rules are needed */
+  validation: z.array(ValidationRuleSchema).optional(),
   /** Default value */
   defaultValue: z.unknown().optional(),
   /** Whether this field contains sensitive data (passwords, API keys, etc.) */
-  sensitive: z.boolean().default(false),
+  sensitive: z.boolean().optional(),
   /**
    * Conditional visibility rule.
    * Example: { dependsOn: 'deployment_type', value: 'production' }
@@ -59,7 +59,7 @@ export const BaseFieldSchema = z.object({
 
 export const TextInputFieldSchema = BaseFieldSchema.extend({
   type: z.literal('text'),
-  multiline: z.boolean().default(false),
+  multiline: z.boolean().optional(),
   rows: z.number().optional(),
   maxLength: z.number().optional(),
   autocomplete: z.string().optional(),
@@ -260,9 +260,9 @@ export const RichTextFieldSchema = BaseFieldSchema.extend({
    * @default ['bold', 'italic', 'link']
    */
   toolbar: z.array(z.enum(['bold', 'italic', 'underline', 'link', 'ordered-list', 'unordered-list']))
-    .default(['bold', 'italic', 'link']),
+    .optional(),
   /** Visible row count of the underlying textarea. @default 5 */
-  rows: z.number().default(5),
+  rows: z.number().optional(),
   /** Minimum character count for validation. */
   minLength: z.number().optional(),
   /** Maximum character count for validation. */
@@ -296,24 +296,48 @@ export type FormField = z.infer<typeof FormFieldSchema>;
 // Form Section — grouping and organization
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const FormSectionSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string().optional(),
-  fields: z.array(FormFieldSchema),
-  /** Whether this section is collapsible */
-  collapsible: z.boolean().default(false),
-  /** Default collapsed state (only if collapsible) */
-  defaultCollapsed: z.boolean().default(false),
-  /**
-   * Number of columns for the field grid in this section.
-   * Fields are laid out left-to-right then wrapped into the next row.
-   * @default 1
-   */
-  columns: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(1),
-});
+/**
+ * FormSection is a recursive type: a section may contain `subsections` which
+ * are themselves FormSections.  We must declare the TypeScript interface first
+ * so that the z.lazy() call below can reference it.
+ */
+export interface FormSection {
+  id: string;
+  title: string;
+  description?: string;
+  fields: FormField[];
+  /** Nested sub-sections rendered indented below this section's fields. */
+  subsections?: FormSection[];
+  collapsible: boolean;
+  defaultCollapsed: boolean;
+  columns: 1 | 2 | 3;
+}
 
-export type FormSection = z.infer<typeof FormSectionSchema>;
+// Note: `z.ZodType<FormSection>` would be ideal but Zod's `_input` type for
+// fields with `.default()` differs from the output type, causing a type mismatch.
+// We use a type assertion so the exported schema carries the correct output type
+// without fighting TypeScript over input vs. output generics.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const FormSectionSchema: z.ZodType<FormSection> = z.lazy(() =>
+  z.object({
+    id: z.string(),
+    title: z.string(),
+    description: z.string().optional(),
+    fields: z.array(FormFieldSchema),
+    /** Nested sub-sections rendered indented below this section's fields. */
+    subsections: z.array(FormSectionSchema).optional(),
+    /** Whether this section is collapsible */
+    collapsible: z.boolean().default(false),
+    /** Default collapsed state (only if collapsible) */
+    defaultCollapsed: z.boolean().default(false),
+    /**
+     * Number of columns for the field grid in this section.
+     * Fields are laid out left-to-right then wrapped into the next row.
+     * @default 1
+     */
+    columns: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(1),
+  })
+) as unknown as z.ZodType<FormSection>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Wizard Step — groups sections into a named step for multi-step forms

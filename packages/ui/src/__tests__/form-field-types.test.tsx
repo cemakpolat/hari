@@ -18,7 +18,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 import { FormRenderer } from '../components/FormRenderer';
-import type { FormSection } from '@hari/core';
+import type { FormSection, FormField } from '@hari/core';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -230,15 +230,17 @@ describe('AutocompleteField', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('RichTextField', () => {
+  // Use `as unknown as FormField` because toolbar's inferred `string[]` type
+  // cannot be assigned to the schema's more specific toolbar enum array type.
   const RICH_FIELD = {
     id: 'notes',
     type: 'rich_text' as const,
     label: 'Notes',
     required: false,
     disabled: false,
-    toolbar: ['bold', 'italic', 'link', 'unordered-list'] as const,
+    toolbar: ['bold', 'italic', 'link', 'unordered-list'],
     rows: 5,
-  };
+  } as unknown as FormField;
 
   it('renders a textarea with the field label', () => {
     renderForm([RICH_FIELD]);
