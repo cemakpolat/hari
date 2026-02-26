@@ -249,6 +249,28 @@ export const VoiceFieldSchema = BaseFieldSchema.extend({
 
 export type VoiceField = z.infer<typeof VoiceFieldSchema>;
 
+// ─── Rich Text Editor ─────────────────────────────────────────────────────────
+// A textarea with a Markdown toolbar (Bold, Italic, Link, lists).
+// The value stored is a Markdown string.
+
+export const RichTextFieldSchema = BaseFieldSchema.extend({
+  type: z.literal('rich_text'),
+  /**
+   * Which toolbar buttons to show.
+   * @default ['bold', 'italic', 'link']
+   */
+  toolbar: z.array(z.enum(['bold', 'italic', 'underline', 'link', 'ordered-list', 'unordered-list']))
+    .default(['bold', 'italic', 'link']),
+  /** Visible row count of the underlying textarea. @default 5 */
+  rows: z.number().default(5),
+  /** Minimum character count for validation. */
+  minLength: z.number().optional(),
+  /** Maximum character count for validation. */
+  maxLength: z.number().optional(),
+});
+
+export type RichTextField = z.infer<typeof RichTextFieldSchema>;
+
 // ─── Discriminated Union ──────────────────────────────────────────────────────
 
 export const FormFieldSchema = z.discriminatedUnion('type', [
@@ -265,6 +287,7 @@ export const FormFieldSchema = z.discriminatedUnion('type', [
   DateRangeFieldSchema,
   AutocompleteFieldSchema,
   VoiceFieldSchema,
+  RichTextFieldSchema,
 ]);
 
 export type FormField = z.infer<typeof FormFieldSchema>;
