@@ -381,3 +381,149 @@ describe('FormRenderer — dark mode safety in jsdom', () => {
     expect(screen.getByRole('textbox', { name: /Notes/i })).toBeDefined();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SliderField
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('SliderField', () => {
+  const SLIDER_FIELD = {
+    id: 'volume',
+    type: 'slider' as const,
+    label: 'Volume',
+    required: false,
+    disabled: false,
+    min: 0,
+    max: 100,
+    step: 5,
+    showValue: true,
+  };
+
+  it('renders a range input', () => {
+    renderForm([SLIDER_FIELD]);
+    const input = screen.getByLabelText('Volume');
+    expect((input as HTMLInputElement).type).toBe('range');
+  });
+
+  it('respects min, max, and step attributes', () => {
+    renderForm([SLIDER_FIELD]);
+    const input = screen.getByLabelText('Volume') as HTMLInputElement;
+    expect(input.min).toBe('0');
+    expect(input.max).toBe('100');
+    expect(input.step).toBe('5');
+  });
+
+  it('displays the current value when showValue=true', () => {
+    renderForm([{ ...SLIDER_FIELD, defaultValue: 42 }]);
+    expect(screen.getByText('42')).toBeDefined();
+  });
+
+  it('does not display value when showValue=false', () => {
+    renderForm([{ ...SLIDER_FIELD, showValue: false, defaultValue: 42 }]);
+    expect(screen.queryByText('42')).toBeNull();
+  });
+
+  it('renders minLabel and maxLabel when provided', () => {
+    renderForm([{ ...SLIDER_FIELD, minLabel: 'Silent', maxLabel: 'Loud' }]);
+    expect(screen.getByText('Silent')).toBeDefined();
+    expect(screen.getByText('Loud')).toBeDefined();
+  });
+
+  it('does not render labels when not provided', () => {
+    renderForm([SLIDER_FIELD]);
+    expect(screen.queryByText('Silent')).toBeNull();
+    expect(screen.queryByText('Loud')).toBeNull();
+  });
+
+  it('fires onChange when slider is moved', () => {
+    renderForm([SLIDER_FIELD]);
+    const input = screen.getByLabelText('Volume');
+    fireEvent.change(input, { target: { value: '75' } });
+    // The displayed value updates
+    expect(screen.getByText('75')).toBeDefined();
+  });
+
+  it('is disabled when field.disabled=true', () => {
+    renderForm([{ ...SLIDER_FIELD, disabled: true }]);
+    expect(screen.getByLabelText('Volume')).toHaveProperty('disabled', true);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FileField
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('FileField', () => {
+  const FILE_FIELD = {
+    id: 'upload',
+    type: 'file' as const,
+    label: 'Upload',
+    required: false,
+    disabled: false,
+    multiple: false,
+    showPreview: true,
+  };
+
+  it('renders a file input', () => {
+    renderForm([FILE_FIELD]);
+    const input = screen.getByLabelText('Upload');
+    expect((input as HTMLInputElement).type).toBe('file');
+  });
+
+  it('sets the multiple attribute when field.multiple=true', () => {
+    renderForm([{ ...FILE_FIELD, multiple: true }]);
+    const input = screen.getByLabelText('Upload') as HTMLInputElement;
+    expect(input.multiple).toBe(true);
+  });
+
+  it('sets accept attribute from the accept array', () => {
+    renderForm([{ ...FILE_FIELD, accept: ['image/*', '.pdf'] }]);
+    const input = screen.getByLabelText('Upload') as HTMLInputElement;
+    expect(input.accept).toBe('image/*,.pdf');
+  });
+
+  it('is disabled when field.disabled=true', () => {
+    renderForm([{ ...FILE_FIELD, disabled: true }]);
+    expect(screen.getByLabelText('Upload')).toHaveProperty('disabled', true);
+  });
+
+  it('shows size error when an oversized file is selected', () => {
+    renderForm([{ ...FILE_FIELD, maxSizeMB: 1 }]);
+    const input = screen.getByLabelText('Upload');
+    // Create a mock File of 2 MB
+    const bigFile = new File(['x'.repeat(2 * 1024 * 1024)], 'big.jpg', { type: 'image/jpeg' });
+    Object.defineProperty(bigFile, 'size', { value: 2 * 1024 * 1024 });
+    fireEvent.change(input, { target: { files: [bigFile] } });
+    expect(screen.getByRole('alert')).toBeDefined();
+    expect(screen.getByText(/exceeds the 1 MB limit/i)).toBeDefined();
+  });
+
+  it('does NOT show size error when files are within the limit', () => {
+    renderForm([{ ...FILE_FIELD, maxSizeMB: 5 }]);
+    const input = screen.getByLabelText('Upload');
+    const smallFile = new File(['hello'], 'small.txt', { type: 'text/plain' });
+    fireEvent.change(input, { target: { files: [smallFile] } });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('clears the size error on a subsequent valid file selection', () => {
+    renderForm([{ ...FILE_FIELD, maxSizeMB: 1 }]);
+    const input = screen.getByLabelText('Upload');
+    const bigFile = new File(['x'], 'big.bin', { type: 'application/octet-stream' });
+    Object.defineProperty(bigFile, 'size', { value: 2 * 1024 * 1024 });
+    fireEvent.change(input, { target: { files: [bigFile] } });
+    expect(screen.getByRole('alert')).toBeDefined();
+    const smallFile = new File(['ok'], 'ok.txt', { type: 'text/plain' });
+    fireEvent.change(input, { target: { files: [smallFile] } });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('does not enforce size when maxSizeMB is not set', () => {
+    renderForm([FILE_FIELD]);
+    const input = screen.getByLabelText('Upload');
+    const bigFile = new File(['x'], 'huge.bin', { type: 'application/octet-stream' });
+    Object.defineProperty(bigFile, 'size', { value: 100 * 1024 * 1024 });
+    fireEvent.change(input, { target: { files: [bigFile] } });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});

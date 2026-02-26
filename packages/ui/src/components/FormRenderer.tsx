@@ -1050,9 +1050,25 @@ function FileField({
   fieldId: string;
 }) {
   const [previews, setPreviews] = useState<Array<{ name: string; url: string; isImage: boolean }>>([]);
+  const [sizeError, setSizeError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+
+    // Enforce maxSizeMB when provided
+    if (files && field.maxSizeMB !== undefined) {
+      const maxBytes = field.maxSizeMB * 1024 * 1024;
+      const oversized = Array.from(files).filter((f) => f.size > maxBytes);
+      if (oversized.length > 0) {
+        const names = oversized.map((f) => f.name).join(', ');
+        setSizeError(
+          `${oversized.length === 1 ? 'File' : 'Files'} exceeds the ${field.maxSizeMB} MB limit: ${names}`,
+        );
+        e.target.value = '';
+        return;
+      }
+    }
+    setSizeError(null);
     onChange(files);
 
     if (field.showPreview && files) {
@@ -1109,6 +1125,21 @@ function FileField({
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {sizeError && (
+        <div
+          role="alert"
+          style={{
+            marginTop: '0.4rem',
+            fontSize: '0.72rem',
+            color: '#dc2626',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.3rem',
+          }}
+        >
+          ⚠ {sizeError}
         </div>
       )}
     </div>
